@@ -23,9 +23,13 @@
 # to manage earthquake focal mechanism data, Computers & Geosciences (2003)
 #
 # Version 1.01
+# Development version 1.1
+# 	Including Hierarchical clustering
+# Development version 1.2
+#	Including slip sense and inmersion
 #
-#
-from numpy import zeros, asarray, sin, cos, sqrt, dot, deg2rad, rad2deg, arccos, arcsin, arctan2, mod, genfromtxt, column_stack, atleast_2d, shape, savetxt, where, linalg, trace, log10
+from numpy import diff, zeros, asarray, sin, cos, sqrt, dot, deg2rad, rad2deg, arccos, arcsin, arctan2, mod, where, linalg, trace
+import scipy.cluster.hierarchy as hac
 
 
 def norm(wax, way, waz):
@@ -180,6 +184,15 @@ def ar2ha(am):
 	amo[2][2]=am[2][2]
 	
 	return amo
+
+def slipinm(strike,dip,rake):
+	a=cos(deg2rad(rake))*cos(deg2rad(strike))+sin(deg2rad(rake))*cos(deg2rad(dip))*sin(deg2rad(strike))
+	b=-cos(deg2rad(rake))*sin(deg2rad(strike))+sin(deg2rad(rake))*cos(deg2rad(dip))*cos(deg2rad(strike))
+	slip=rad2deg(arctan2(-b,a))
+	slip=mod((slip)+360,360)
+	inmer=rad2deg(arcsin(sin(deg2rad(rake))*sin(deg2rad(dip))))
+	
+	return slip, inmer
 	
 def kave(plungt,plungb,plungp):
 	"""x and y for the Kaverina diagram"""
@@ -245,3 +258,18 @@ def moment(am):
 	am0=(abs(dval[0])+abs(dval[2]))/2
 	
 	return am0, fclvd, dval, vect
+
+def HC(data,meth,num_clust):
+	# Mahalanobis Hierarchycal Clustering
+	# 	data: 	the set of variables used to perform the clustering analysis
+	#	method:	method to perform the HCA [single(default), complete, average, weighted, average, centroid, median, ward]
+	#	num_clust:	predefined number of clusters, if not present then it is automatically computed with "diff".
+	# by default metric="mahalanobis"
+	li = hac.linkage(data, method=meth, metric='euclidean')
+	if num_clust == 0:
+		knee = diff(li[::-1, 2], 2)
+		num_clust = knee.argmax() + 2
+		clustID = hac.fcluster(li, num_clust, 'maxclust')
+	else:
+		clustID = hac.fcluster(li, num_clust, 'maxclust')
+	return clustID
