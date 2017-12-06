@@ -17,39 +17,136 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Version 1.01
+# Version 1.1 beta
+#	Including:
+#	new output parsing
+#	symbol coloring
+#	Hierarchical clustering with several methods
 #
+# Version 1.2 beta
+#	Including:
+#	Slip sense and inmersion optional output
+#
+# Version 1.3 beta
+#	Including:
+#	Adapted to python 3
 #
 
-import sys, argparse, os
-
-from numpy import zeros, asarray, sin, cos, sqrt, dot, deg2rad, rad2deg, arccos, arcsin, arctan2, mod, genfromtxt, column_stack, atleast_2d, shape, savetxt, where, linalg, trace, log10
+import sys, argparse
+from argparse import RawTextHelpFormatter, ArgumentParser
+from numpy import c_, vstack, array, zeros, asarray, genfromtxt, atleast_2d, shape, log10
 from functionsFMC import *
 from plotFMC import *
 
 # All the command line parser thing.
-parser = argparse.ArgumentParser(description='Focal mechanism process\
- and classification.')
-parser.add_argument('infile', nargs='?') #, type=argparse.FileType('r'), default=sys.stdin
+parser = ArgumentParser(description='Focal mechanism process\
+ and classification.', formatter_class=RawTextHelpFormatter )
+parser.add_argument('infile', nargs='?') #, class=argparse.Fileclass('r'), default=sys.stdin
 parser.add_argument('-i' ,nargs=1,default=['CMT'],choices=['CMT','AR'], \
-help='Input file format. Choose between\n [CMT]: Global CMT for psmeca (GMT) [default]; \
-[AR]: Aki and Richards for psmeca (GMT)')
-parser.add_argument('-o',nargs=1,default=['CMT'],choices=['CMT','P','AR','K','ALL'], \
-help='Output file format. Choose between\n [CMT]: Global CMT for psmeca (GMT) [default];\
-[P]: Old Harvard CMT with both planes for psmeca (GMT); \
-[AR]: Aki and Richards for psmeca (GMT); \
-[K]: X, Y positions for the Kaverina diagram with Mw, depth, ID and class; \
-[ALL]: A complete format file that outputs all the parameters computed (see details on manual)')
+help='Input file format.\n\
+Choose between:\n\
+[CMT]: Global CMT for psmeca (GMT) [default]\n\
+[AR]: Aki and Richards for psmeca (GMT)\n ')
+parser.add_argument('-o',nargs=1,default=['CMT'],choices=['CMT','P','AR','K','ALL','CUSTOM'], \
+help='Output file format.\n\
+Choose between:\n\
+[CMT]: Global CMT for psmeca (GMT) [default]\n\
+[P]: Old Harvard CMT with both planes for psmeca (GMT)\n\
+[AR]: Aki and Richards for psmeca (GMT)\n\
+[K]: X, Y positions for the Kaverina diagram with Mw, depth, ID and class\n\
+[ALL]: A complete format file that outputs all the parameters computed\n\
+[CUSTOM]: The outputs fields are given with the option -of [fields].\n\
+Type "FMC.py -helpFields" to obtain information on the data fields \n\
+that can be used and parsed as comma separated names.\n\
+(see details on manual)\n ')
+parser.add_argument('-of',nargs='?', \
+help='If present together with -o \'CUSTOM\' FMC will use the fields given as output.\n ')
 parser.add_argument('-p',metavar='[PlotFileName.pdf]',nargs='?', \
-help='If present FMC will generate a plot with the classification diagram with the format specified in the plot file name.')
+help='If present FMC will generate a plot with the classification diagram\n\
+with the file format specified in the plot file name.\n ')
+parser.add_argument('-pc',nargs='?', \
+help='If present FMC will use the specified parameter to fill the plotted\n\
+circles with color in the classification diagram.\n\
+Type "FMC.py -helpFields" to obtain information on the data fields\n\
+that can be used.\n\
+By default FMC uses white circles or, for the clustering, the cluster number.\n ')
+parser.add_argument('-a',action='count',\
+help='If present the program will plot labels with the ID on the diagram plot.\n ')
+parser.add_argument('-cm',nargs='?',choices=['single','complete','average','weighted','centroid','median','ward'], \
+help='If present FMC will perform a hierarchical clustering analysis\n\
+of the focal mechanisms distribution on the Kaverina diagram\n\
+with the method specified:\n\
+[single]: single/min/nearest\n\
+[complete]: complete/max/farthest point\n\
+[average]: average/UPGMA\n\
+[weighted]: weighted/WPGMA\n\
+[centroid]: centroid/UPGMC [default]\n\
+[median]: median/WPGMC\n\
+[ward]: Ward\'s\n ')
+parser.add_argument('-cn',nargs='?', \
+help='If present FMC will perform a hierarchical clustering analysis\n\
+of the focal mechanisms distribution on the Kaverina diagram\n\
+with the number of clusters specified.\n\
+if 0 [default] the minimum number of clusters is computed automatically.\n ')
+parser.add_argument('-ci',nargs='?', \
+help='If present FMC will use the data given to perform the \n\
+hierarchical clustering analysis of the focal mechanisms \n\
+instead of the position on the Kaverina diagram, \n\
+e.g. "-ci lon,lat" in order to perform a spatial clustering. \n\
+Type "FMC.py -helpFields" to obtain information on the data fields \n\
+that can be used and parsed as comma separated names.\n ')
 parser.add_argument('-v',action='count',\
-help='If present the program will show additional processing information.')
+help='If present the program will show additional processing information.\n ')
+parser.add_argument('-helpFields',action='count',\
+help='If present the program will show information on the different\n\
+parameters used or generated by FMC and will exit.\n ')
 
 args = parser.parse_args()
 args.outfile = sys.stdout
 
+if args.helpFields != None:
+	sys.stderr.write("Parameters used or generated by FMC: \n\n\
+lon = longitude \n\
+lat = latitude \n\
+dep = depth \n\
+mrr = mrr centroid moment tensor component \n\
+mtt = mtt centroid moment tensor component \n\
+mff = mff centroid moment tensor component \n\
+mrt = mrt centroid moment tensor component \n\
+mrf = mrf centroid moment tensor component \n\
+mtf = mtf centroid moment tensor component \n\
+mant = mantissa of the seismic moment tensor \n\
+expo = exponent of the seismic moment tensor \n\
+Mo = Scalar seismic moment \n\
+Mw = Moment (or Kanamori) magnitude \n\
+strA = Strike of nodal plane A \n\
+dipA = Dip of nodal plane A \n\
+rakeA = Rake of nodal plane A \n\
+strB = Strike of nodal plane B \n\
+dipB = Dip of nodal plane B \n\
+rakeB = Rake of nodal plane B \n\
+slipA = Slip sense of plane A \n\
+plungA = Plunge of slip vector of plane A \n\
+slipB = Slip sense of plane B \n\
+plungB = Plunge of slip vector of plane B \n\
+trendp = Trend of P axis \n\
+plungp = Plunge of P axis \n\
+trendb = Trend of B axis \n\
+plungb = Plunge of B axis \n\
+trendt = Trend of T axis \n\
+plungt = Plunge of T axis \n\
+fclvd = Compensated linear vector dipole ratio \n\
+x_kav = x position on the Kaverina diagram \n\
+y_kav = y position on the Kaverina diagram \n\
+ID = ID of the event \n\
+clas = focal mechanism rupture type \n\
+posX = X plotting position for GMT psmeca \n\
+posY = Y plotting position for GMT psmeca \n\
+\n")
+	sys.exit(1)
+
 if args.infile:
-	if args.v > 0:
+	if args.v != None:
 		sys.stderr.write(''.join('Working on input file '+ args.infile + '\n'))
 
 	open(args.infile).read()
@@ -72,24 +169,57 @@ if n_events == 1:
 fields = shape(data.dtype.names)[0]
 
 # Output data array generation
-if args.o[0] == 'CMT':
-	outdata = zeros((n_events+1,14)).tolist()
-elif args.o[0] == 'P':
-	outdata = zeros((n_events+1,15)).tolist()
-elif args.o[0] == 'AR':
-	outdata = zeros((n_events+1,11)).tolist()
-elif args.o[0] == 'K':
-	outdata = zeros((n_events+1,6)).tolist()
-elif args.o[0] == 'ALL':
-	outdata = zeros((n_events+1,29)).tolist()
-else:
-	sys.stderr.write("ERROR - Incorrect type of output file")
-	sys.exit(1)
+#if args.o[0] == 'CMT':
+#	outdata = zeros((n_events+1,14)).tolist()
+#elif args.o[0] == 'P':
+#	outdata = zeros((n_events+1,15)).tolist()
+#elif args.o[0] == 'AR':
+#	outdata = zeros((n_events+1,11)).tolist()
+#elif args.o[0] == 'K':
+#	outdata = zeros((n_events+1,6)).tolist()
+#elif args.o[0] == 'ALL':
+#	outdata = zeros((n_events+1,29)).tolist()
+#else:
+#	sys.stderr.write("ERROR - Incorrect class of output file")
+#	sys.exit(1)
 
-xplot=zeros((n_events,1))
-yplot=zeros((n_events,1))
-Mwplot=zeros((n_events,1))
-depplot=zeros((n_events,1))
+# Output data array generation
+lon_all=zeros((n_events,1))
+lat_all=zeros((n_events,1))
+dep_all=zeros((n_events,1))
+mrr_all=zeros((n_events,1))
+mtt_all=zeros((n_events,1))
+mff_all=zeros((n_events,1))
+mrt_all=zeros((n_events,1))
+mrf_all=zeros((n_events,1))
+mtf_all=zeros((n_events,1))
+mant_all=zeros((n_events,1))
+expo_all=zeros((n_events,1))
+Mo_all=zeros((n_events,1))
+Mw_all=zeros((n_events,1))
+strA_all=zeros((n_events,1))
+dipA_all=zeros((n_events,1))
+rakeA_all=zeros((n_events,1))
+strB_all=zeros((n_events,1))
+dipB_all=zeros((n_events,1))
+rakeB_all=zeros((n_events,1))
+slipA_all=zeros((n_events,1))
+plungA_all=zeros((n_events,1))
+slipB_all=zeros((n_events,1))
+plungB_all=zeros((n_events,1))
+trendp_all=zeros((n_events,1))
+plungp_all=zeros((n_events,1))
+trendb_all=zeros((n_events,1))
+plungb_all=zeros((n_events,1))
+trendt_all=zeros((n_events,1))
+plungt_all=zeros((n_events,1))
+fclvd_all=zeros((n_events,1))
+x_kav_all=zeros((n_events,1))
+y_kav_all=zeros((n_events,1))
+ID_all=[None] * n_events
+clas_all=[None] * n_events
+posX_all=[None] * n_events
+posY_all=[None] * n_events
 
 for row in range(n_events):
 	if args.i[0] == 'CMT':
@@ -97,7 +227,7 @@ for row in range(n_events):
 			sys.stderr.write("ERROR - Incorrect number of columns (should be 13). - Program aborted")
 			sys.exit(1)
 		else:
-			if args.v > 0:
+			if args.v != None:
 				sys.stderr.write(''.join('\rProcessing '+str(row+1)+'/'+str(n_events)+' focal mechanisms.'))
 
 		lon=data[row][0]
@@ -117,9 +247,9 @@ for row in range(n_events):
 		am=asarray(([mtt,-mtf,mrt],[-mtf,mff,-mrf],[mrt,-mrf,mrr]))
 
 		# scalar moment and fclvd
-		am0, fclvd, val, vect = moment(am)
-		Mw=((2.0/3.0)*log10(am0))-10.7
-		mant_exp = ("%e" % am0).split('e')
+		Mo, fclvd, val, vect = moment(am)
+		Mw=((2.0/3.0)*log10(Mo))-10.7
+		mant_exp = ("%e" % Mo).split('e')
 		mant=mant_exp[0]
 		expo=mant_exp[1].strip('+')
 
@@ -167,21 +297,25 @@ for row in range(n_events):
 			dz=-dz
 
 		# Obtaining geometry of planes
-		str1,dip1,rake1,dipdir1=nd2pl(anX,anY,anZ,dx,dy,dz)
-		str2,dip2,rake2,dipdir2=nd2pl(dx,dy,dz,anX,anY,anZ)
+		strA,dipA,rakeA,dipdir1=nd2pl(anX,anY,anZ,dx,dy,dz)
+		strB,dipB,rakeB,dipdir2=nd2pl(dx,dy,dz,anX,anY,anZ)
+
+		# Obtaining slip vectors
+		slipA,plungA=slipinm(strA,dipA,rakeA)
+		slipB,plungB=slipinm(strB,dipB,rakeB)
 
 		# x, y Kaverina diagram
 		x_kav,y_kav=kave(plungt,plungb,plungp)
 
 		# Focal mechanism classification Alvarez-Gomez, 2009.
-		clase=mecclass(plungt,plungb,plungp)
+		clas=mecclass(plungt,plungb,plungp)
 
 	elif args.i[0] == 'AR':
 		if fields != 10:
 			sys.stderr.write("ERROR - Incorrect number of columns (should be 10). - Program aborted")
 			sys.exit(1)
 		else:
-			if args.v > 0:
+			if args.v != None:
 				sys.stderr.write(''.join('\rProcessing '+str(row+1)+'/'+str(n_events)+' focal mechanisms.'))
 
 		lon=data[row][0]
@@ -191,25 +325,28 @@ for row in range(n_events):
 		posY=data[row][8]
 		ID=data[row][9]
 
-		str1=(data[row][3])
-		dip1=(data[row][4])
-		rake1=(data[row][5])
+		strA=(data[row][3])
+		dipA=(data[row][4])
+		rakeA=(data[row][5])
 		Mw=(data[row][6])
-		am0=10**(1.5*(Mw+10.7))
-		mant_exp = ("%e" % am0).split('e')
+		Mo=10**(1.5*(Mw+10.7))
+		mant_exp = ("%e" % Mo).split('e')
 		mant=mant_exp[0]
 		expo=mant_exp[1].strip('+')
 
-		anX, anY, anZ, dx, dy, dz = pl2nd(str1,dip1,rake1)
+		anX, anY, anZ, dx, dy, dz = pl2nd(strA,dipA,rakeA)
 		px, py, pz, tx, ty, tz, bx, by, bz = nd2pt(anX,anY,anZ,dx,dy,dz)
-		str2,dip2,rake2,dipdir2 = pl2pl(str1,dip1,rake1)
+		strB,dipB,rakeB,dipdir2 = pl2pl(strA,dipA,rakeA)
+
+		slipA,plungA=slipinm(strA,dipA,rakeA)
+		slipB,plungB=slipinm(strB,dipB,rakeB)
 
 		trendp,plungp=ca2ax(px,py,pz)
 		trendt,plungt=ca2ax(tx,ty,tz)
 		trendb,plungb=ca2ax(bx,by,bz)
 
 		# moment tensor from P and T
-		am=nd2ar(anX,anY,anZ,dx,dy,dz,am0)
+		am=nd2ar(anX,anY,anZ,dx,dy,dz,Mo)
 		am=ar2ha(am)
 		mrr=am[2][2]
 		mff=am[1][1]
@@ -219,116 +356,160 @@ for row in range(n_events):
 		mtf=am[0][1]
 
 		# scalar moment and fclvd
-		am0, fclvd, val, vect = moment(am)
+		Mo, fclvd, val, vect = moment(am)
 
 		# x, y Kaverina diagram
 		x_kav,y_kav=kave(plungt,plungb,plungp)
 
 		# Focal mechanism classification Alvarez-Gomez, 2009.
-		clase=mecclass(plungt,plungb,plungp)
+		clas=mecclass(plungt,plungb,plungp)
 
 	else:
 		sys.stderr.write('Error, input file format should be G or P.')
 		sys.exit(1)
-	r=row+1
 
 	# storing data for the plot
-	xplot[row] = x_kav
-	yplot[row] = y_kav
-	Mwplot[row] = Mw
-	depplot[row] = row
+	lon_all[row]="%g" %(lon)
+	lat_all[row]="%g" %(lat)
+	dep_all[row]=dep
+	mrr_all[row]="%g" %(mrr/(10**(int(expo))))
+	mtt_all[row]="%g" %(mtt/(10**(int(expo))))
+	mff_all[row]="%g" %(mff/(10**(int(expo))))
+	mrt_all[row]="%g" %(mrt/(10**(int(expo))))
+	mrf_all[row]="%g" %(mrf/(10**(int(expo))))
+	mtf_all[row]="%g" %(mtf/(10**(int(expo))))
+	mant_all[row]=mant
+	expo_all[row]=expo
+	Mo_all[row]="%g" %(Mo)
+	Mw_all[row]="%.1f" %(Mw)
+	strA_all[row]="%g" %(strA)
+	dipA_all[row]="%g" %(dipA)
+	rakeA_all[row]="%g" %(rakeA)
+	strB_all[row]="%g" %(strB)
+	dipB_all[row]="%g" %(dipB)
+	rakeB_all[row]="%g" %(rakeB)
+	slipA_all[row]="%g" %(slipA)
+	plungA_all[row]="%g" %(plungA)
+	slipB_all[row]="%g" %(slipB)
+	plungB_all[row]="%g" %(plungB)
+	trendp_all[row]="%g" %(trendp)
+	plungp_all[row]="%g" %(plungp)
+	trendb_all[row]="%g" %(trendb)
+	plungb_all[row]="%g" %(plungb)
+	trendt_all[row]="%g" %(trendt)
+	plungt_all[row]="%g" %(plungt)
+	fclvd_all[row]="%g" %(fclvd)
+	x_kav_all[row]="%g" %(x_kav)
+	y_kav_all[row]="%g" %(y_kav)
+	ID_all[row]=ID
+	clas_all[row]=clas
+	posX_all[row]=posX
+	posY_all[row]=posY
 
-	if args.o[0] == 'CMT':
-		outdata[0]='#Lon, Lat, Depth, mrr, mtt, mff, mrt, mrf, mtf, Exponent_(dyn-cm), X_position, Y_position, ID, Mechanism_type'
-		outdata[r][0] = "%g" %(lon)
-		outdata[r][1] = "%g" %(lat)
-		outdata[r][2] = dep
-		outdata[r][3] = "%g" %(mrr/(10**(int(expo))))
-		outdata[r][4] = "%g" %(mtt/(10**(int(expo))))
-		outdata[r][5] = "%g" %(mff/(10**(int(expo))))
-		outdata[r][6] = "%g" %(mrt/(10**(int(expo))))
-		outdata[r][7] = "%g" %(mrf/(10**(int(expo))))
-		outdata[r][8] = "%g" %(mtf/(10**(int(expo))))
-		outdata[r][9] = expo
-		outdata[r][10] = posX
-		outdata[r][11] = posY
-		outdata[r][12] = ID
-		outdata[r][13] = clase
+	r=row+1
 
-	elif args.o[0] == 'P':
-		outdata[0]='#Lon, Lat, Depth, Strike_A, Dip_A, Rake_A, Strike_B, Dip_B, Rake_B, Seismic_moment_mantissa, Exponent_(dyn-cm), X_position, Y_position, ID, Mechanism_type'
-		outdata[r][0] = "%g" %(lon)
-		outdata[r][1] = "%g" %(lat)
-		outdata[r][2] = dep
-		outdata[r][3] = "%g" %(str1)
-		outdata[r][4] = "%g" %(dip1)
-		outdata[r][5] = "%g" %(rake1)
-		outdata[r][6] = "%g" %(str2)
-		outdata[r][7] = "%g" %(dip2)
-		outdata[r][8] = "%g" %(rake2)
-		outdata[r][9] = mant
-		outdata[r][10] = expo
-		outdata[r][11] = posX
-		outdata[r][12] = posY
-		outdata[r][13] = ID
-		outdata[r][14] = clase
+lonH=vstack(((['Longitude']),(array(lon_all, dtype=object))))
+latH=vstack(((['Latitude']),(array(lat_all, dtype=object))))
+depH=vstack(((['Depth (km)']),(array(dep_all, dtype=object))))
+mrrH=vstack(((['mrr']),(array(mrr_all, dtype=object))))
+mttH=vstack(((['mtt']),(array(mtt_all, dtype=object))))
+mffH=vstack(((['mff']),(array(mff_all, dtype=object))))
+mrtH=vstack(((['mrt']),(array(mrt_all, dtype=object))))
+mrfH=vstack(((['mrf']),(array(mrf_all, dtype=object))))
+mtfH=vstack(((['mtf']),(array(mtf_all, dtype=object))))
+mantH=vstack(((['Seismic moment Mantissa']),(array(mant_all, dtype=object))))
+expoH=vstack(((['Exponent (dyn-cm)']),(array(expo_all, dtype=object))))
+MoH=vstack(((['Mo']),(array(Mo_all, dtype=object))))
+MwH=vstack(((['Mw']),(array(Mw_all, dtype=object))))
+strAH=vstack(((['Strike A']),(array(strA_all, dtype=object))))
+dipAH=vstack(((['Dip A']),(array(dipA_all, dtype=object))))
+rakeAH=vstack(((['Rake A']),(array(rakeA_all, dtype=object))))
+strBH=vstack(((['Strike B']),(array(strB_all, dtype=object))))
+dipBH=vstack(((['Dip B']),(array(dipB_all, dtype=object))))
+rakeBH=vstack(((['Rake B']),(array(rakeB_all, dtype=object))))
+slipAH=vstack(((['SlipSense A']),(array(slipA_all, dtype=object))))
+plungAH=vstack(((['Plunge A']),(array(plungA_all, dtype=object))))
+slipBH=vstack(((['SlipSense B']),(array(slipB_all, dtype=object))))
+plungBH=vstack(((['Plunge B']),(array(plungB_all, dtype=object))))
+trendpH=vstack(((['Trend P']),(array(trendp_all, dtype=object))))
+plungpH=vstack(((['Plunge P']),(array(plungp_all, dtype=object))))
+trendbH=vstack(((['Trend B']),(array(trendb_all, dtype=object))))
+plungbH=vstack(((['Plunge B']),(array(plungb_all, dtype=object))))
+trendtH=vstack(((['Trend T']),(array(trendt_all, dtype=object))))
+plungtH=vstack(((['Plunge T']),(array(plungt_all, dtype=object))))
+fclvdH=vstack(((['fclvd']),(array(fclvd_all, dtype=object))))
+x_kavH=vstack(((['X Kaverina']),(array(x_kav_all, dtype=object))))
+y_kavH=vstack(((['Y Kaverina']),(array(y_kav_all, dtype=object))))
+IDH=vstack(((['ID']),(array(ID_all).reshape((n_events,1)))))
+clasH=vstack(((['Mechanism type']),(array(clas_all).reshape((n_events,1)))))
+posXH=vstack(((['X position(GMT)']),(array(posX_all).reshape((n_events,1)))))
+posYH=vstack(((['Y position(GMT)']),(array(posY_all).reshape((n_events,1)))))
 
-	elif args.o[0] == 'AR':
-		outdata[0]='#Lon, Lat, Depth, Strike_A, Dip_A, Rake_A, Mw, X_position, Y_position, ID, Mechanism_type'
-		outdata[r][0] = "%g" %(lon)
-		outdata[r][1] = "%g" %(lat)
-		outdata[r][2] = dep
-		outdata[r][3] = "%g" %(str1)
-		outdata[r][4] = "%g" %(dip1)
-		outdata[r][5] = "%g" %(rake1)
-		outdata[r][6] = "%g" %(Mw)
-		outdata[r][7] = posX
-		outdata[r][8] = posY
-		outdata[r][9] = ID
-		outdata[r][10] = clase
+dict_H={'lon':lonH,'lat':latH,'dep':depH,'mrr':mrrH,'mtt':mttH,'mff':mffH,'mrt':mrtH,'mrf':mrfH,'mtf':mtfH,'mant':mantH,'expo':expoH,'Mo':MoH,'Mw':MwH,'strA':strAH,'dipA':dipAH,'rakeA':rakeAH,'strB':strBH,'dipB':dipBH,'rakeB':rakeBH,'slipA':slipAH,'plungA':plungAH,'slipB':slipBH,'plungB':plungBH,'trendp':trendpH,'plungp':plungpH,'trendb':trendbH,'plungb':plungbH,'trendt':trendtH,'plungt':plungtH,'fclvd':fclvdH,'x_kav':x_kavH,'y_kav':y_kavH,'ID':IDH,'clas':clasH,'posX':posXH,'posY':posYH}
+dict_all={'lon':lon_all,'lat':lat_all,'dep':dep_all,'mrr':mrr_all,'mtt':mtt_all,'mff':mff_all,'mrt':mrt_all,'mrf':mrf_all,'mtf':mtf_all,'mant':mant_all,'expo':expo_all,'Mo':Mo_all,'Mw':Mw_all,'strA':strA_all,'dipA':dipA_all,'rakeA':rakeA_all,'strB':strB_all,'dipB':dipB_all,'rakeB':rakeB_all,'slipA':slipA_all,'plungA':plungA_all,'slipB':slipB_all,'plungB':plungB_all,'trendp':trendp_all,'plungp':plungp_all,'trendb':trendb_all,'plungb':plungb_all,'trendt':trendt_all,'plungt':plungt_all,'fclvd':fclvd_all,'x_kav':x_kav_all,'y_kav':y_kav_all,'ID':ID_all,'clas':clas_all,'posX':posX_all,'posY':posY_all}
 
-	elif args.o[0] == 'K':
-		outdata[0]='#X_Kaverina_diagram, Y_Kaverina_diagram, Mw, Depth, ID, Mechanism_type'
-		outdata[r][0] = "%g" %(x_kav)
-		outdata[r][1] = "%g" %(y_kav)
-		outdata[r][2] = "%g" %(Mw)
-		outdata[r][3] = dep
-		outdata[r][4] = ID
-		outdata[r][5] = clase
+if args.o[0] == 'CMT':
+	outdata = c_[lonH, latH, depH, mrrH, mttH, mffH, mrtH, mrfH, mtfH, expoH, posXH, posYH, IDH, clasH]
 
-	elif args.o[0] == 'ALL':
-		outdata[0]='#Lon_[1], Lat_[2], Depth_[3], mrr_[4], mtt_[5], mff_[6], mrt_[7], mrf_[8], mtf_[9], Exponent_(dyn-cm)_[10], Scalar_seismic_moment_(dyn-cm)_[11], Mw_[12], Strike_A_[13], Dip_A_[14], Rake_A_[15], Strike_B_[16], Dip_B_[17], Rake_B_[18], P_Trend_[19], P_plunge_[20], B_trend_[21], B_plunge_[22], T_trend_[23], T_plunge_[24], fclvd_[25], X_Kaverina_diagram_[26], Y_Kaverina_diagram_[27], ID_[28], Mechanism_type_[29]'
-		outdata[r][0] = "%g" %(lon)
-		outdata[r][1] = "%g" %(lat)
-		outdata[r][2] = dep
-		outdata[r][3] = "%g" %(mrr/(10**int(expo)))
-		outdata[r][4] = "%g" %(mtt/(10**int(expo)))
-		outdata[r][5] = "%g" %(mff/(10**int(expo)))
-		outdata[r][6] = "%g" %(mrt/(10**int(expo)))
-		outdata[r][7] = "%g" %(mrf/(10**int(expo)))
-		outdata[r][8] = "%g" %(mtf/(10**int(expo)))
-		outdata[r][9] = expo
-		outdata[r][10] = "%g" %(am0)
-		outdata[r][11] = "%g" %(Mw)
-		outdata[r][12] = "%g" %(str1)
-		outdata[r][13] = "%g" %(dip1)
-		outdata[r][14] = "%g" %(rake1)
-		outdata[r][15] = "%g" %(str2)
-		outdata[r][16] = "%g" %(dip2)
-		outdata[r][17] = "%g" %(rake2)
-		outdata[r][18] = "%g" %(trendp)
-		outdata[r][19] = "%g" %(plungp)
-		outdata[r][20] = "%g" %(trendb)
-		outdata[r][21] = "%g" %(plungb)
-		outdata[r][22] = "%g" %(trendt)
-		outdata[r][23] = "%g" %(plungt)
-		outdata[r][24] = "%g" %(fclvd)
-		outdata[r][25] = "%g" %(x_kav)
-		outdata[r][26] = "%g" %(y_kav)
-		outdata[r][27] = ID
-		outdata[r][28] = clase
-if args.v > 0:
+elif args.o[0] == 'P':
+	outdata = c_[lonH, latH, depH, strAH, dipAH, rakeAH, strBH, dipBH, rakeBH, mantH, expoH, posXH, posYH, IDH, clasH]
+
+elif args.o[0] == 'AR':
+	outdata = c_[lonH, latH, depH, strAH, dipAH, rakeAH, MwH, posXH, posYH, IDH, clasH]
+
+elif args.o[0] == 'K':
+	outdata = c_[x_kavH, y_kavH, MwH, depH, IDH, clasH]
+
+elif args.o[0] == 'ALL':
+	 outdata = c_[lonH, latH, depH, mrrH, mttH, mffH, mrtH, mrfH, mtfH, expoH, MoH, MwH, strAH, dipAH, rakeAH, strBH, dipBH, rakeBH, slipAH, plungAH, slipBH, plungBH, trendpH, plungpH, trendbH, plungbH, trendtH, plungtH, fclvdH, x_kavH, y_kavH, IDH, clasH]
+
+elif args.o[0] == 'CUSTOM':
+	if "," in args.of:
+			labels = ('%s' % args.of).split(",")
+			nl = len(labels)-1
+#~			outdata=1
+			for l in labels:
+				if 'outdata' in locals():
+ 					outdata=c_[outdata,dict_H[l]]
+				else:
+					outdata=dict_H[l]
+	else:
+			outdata = dict_H[args.of]
+
+if args.v != None:
 	sys.stderr.write('\n')
+
+if args.cn == None and args.cm == None:
+	pass
+else:
+	if args.cm == None:
+		method = 'centroid'
+	else:
+		method = args.cm
+
+	if args.cn == None:
+		num_clust = 0
+	else:
+		num_clust = int(args.cn)
+
+	if args.ci:
+		if "," in args.ci:
+			labels = ('%s' % args.ci).split(",")
+			nl = len(labels)-1
+			cl_input=None
+			for l in labels:
+				if cl_input != None:
+					cl_input=c_[cl_input,dict_all[l]]
+				else:
+					cl_input=dict_all[l]
+		else:
+			cl_input = dict_all[args.ci]
+	else:
+		cl_input = c_[x_kav_all,y_kav_all]
+
+	clustID = HC(cl_input, method, num_clust)
+	clustIDH=vstack(((['Cluster_ID']),(array(clustID).reshape((n_events,1)))))
+	outdata = c_[outdata,clustIDH]
 
 
 # diagram FMC plot
@@ -337,13 +518,29 @@ if args.v > 0:
 #~ for item in outdata:
 #~ print outdata
 #~ savetxt(args.outfile,outdata,delimiter=' ')
-args.outfile.write('\n'.join(str(str(e)).strip("[]").replace("\'",'').replace(",",'') for e in outdata))
-print ""
+args.outfile.write('\n'.join(str(e).strip("[]").replace("'",'').replace('\n','') for e in outdata))
+print ("")
 #~ args.outfile.close()
+if args.p:
+	if args.pc:
+		color = dict_all[args.pc]
+		label = str(dict_H[args.pc][0]).strip("[]").replace("'",'')
+	else:
+		try:
+			clustID
+		except:
+			args.pc='dep'
+			color = dict_all[args.pc]
+			label = str(dict_H[args.pc][0]).strip("[]").replace("'",'')
+		else:
+			color=clustID
+			label='Clust ID'
 
-if args.p==None:
-	sys.exit(1)
-else:
-	fig=circles(xplot,yplot,Mwplot*10,depplot,args.p.split('.')[0])
-	plt.savefig(args.p)
+	if args.a > 0:
+		fig=annot(x_kav_all,y_kav_all,Mw_all*10,color,args.p.split('.')[0],label,ID_all)
+	else:
+		fig=circles(x_kav_all,y_kav_all,Mw_all*10,color,args.p.split('.')[0],label)
+
+	plt.savefig(args.p,dpi=300)
 	plt.close()
+
