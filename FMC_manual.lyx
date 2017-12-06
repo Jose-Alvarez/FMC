@@ -1,0 +1,3091 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+
+\end_preamble
+\use_default_options true
+\begin_modules
+theorems-ams
+eqs-within-sections
+figs-within-sections
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package babel
+\inputencoding utf8
+\fontencoding global
+\font_roman palatino
+\font_sans avant
+\font_typewriter lmtt
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command bibtex
+\index_command default
+\paperfontsize 11
+\spacing single
+\use_hyperref true
+\pdf_title "Focal mechanisms managing, classification and plot program. The FMC Manual"
+\pdf_author "José A. Álvarez-Gómez"
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks true
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize a4paper
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plainnat
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date true
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 2
+\tocdepth 2
+\paragraph_separation skip
+\defskip medskip
+\quotes_language swedish
+\papercolumns 1
+\papersides 1
+\paperpagestyle plain
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+
+\family typewriter
+FMC
+\family default
+
+\begin_inset Newline newline
+\end_inset
+
+A program to manage, classify and plot focal mechanism data
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+\size small
+\noun on
+version 1.01, March 2015
+\end_layout
+
+\begin_layout Author
+\noindent
+José A.
+ Álvarez-Gómez
+\begin_inset Newline newline
+\end_inset
+
+
+\size small
+\emph on
+Faculty of Geology.
+ Universidad Complutense de Madrid
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace 10cm
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset line
+LatexCommand rule
+offset "0.5ex"
+width "100col%"
+height "0.8pt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename /home/jose/curro/Articulos/desarrollo/fmc/CreativeCommons_88x31.png
+	display false
+	scale 60
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size small
+This text is distributed under the Creative Commons License:
+\begin_inset Newline newline
+\end_inset
+
+Attribution-NonCommercial-ShareAlike 4.0 International (
+\begin_inset CommandInset href
+LatexCommand href
+name "CC BY-NC-SA 4.0"
+target "https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode"
+
+\end_inset
+
+) 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Acknowledgments
+\end_layout
+
+\begin_layout Standard
+I have been using different versions of this program during the last decade.
+ Initially I reworked some of the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "gasp03"
+
+\end_inset
+
+ FORTRAN subroutines on Matlab in order to obtain all the focal mechanism
+ parameters from the Harvard CMT 
+\family typewriter
+psmeca
+\family default
+ formatted catalog.
+ During my research on seismotectonics I started to use the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "froh92"
+
+\end_inset
+
+ diagram, but after 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kaga05"
+
+\end_inset
+
+ I decided to try the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kave96"
+
+\end_inset
+
+ one.
+ From the original Matlab program I jumped to the Free Software world adapting
+ it to Octave.
+ The program only produced the x and y positions of the events and all the
+ plotting was done by means of GMT 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "gmt"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Some colleagues wanted to use the diagram for their work, but they were
+ not familiar with GMT, so I decided to make a big improvement in the program
+ to make it easy to use, distributable and with plotting support.
+ I choose to program it in Python with the following basic ideas:
+\end_layout
+
+\begin_layout Enumerate
+It should be called from the terminal or the command line in order to be
+ incorporated into shell scripts
+\end_layout
+
+\begin_layout Enumerate
+It should behave like any other shell unix tool, compatible with redirection,
+ piping and ASCII format
+\end_layout
+
+\begin_layout Enumerate
+it should be compatible with the GMT 
+\family typewriter
+psmeca
+\family default
+ formats to allow the mapping of the focal mechanisms
+\end_layout
+
+\begin_layout Enumerate
+It should has the option to produce a 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kave96"
+
+\end_inset
+
+ type classification diagram
+\end_layout
+
+\begin_layout Standard
+Part of the programming was done during my happy days as Ph.D.
+ candidate at the UCM; so I have to acknowledge the UCM scholarship that
+ allowed me to start my scientific career.
+\end_layout
+
+\begin_layout Standard
+I would like to thank the beta testers Jorge L.
+ Giner-Robles and Alberto Jiménez-Díaz for their comments and suggestions.
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace bigskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If you use 
+\family typewriter
+FMC
+\family default
+, and consider it appropriate, you can acknowledge it by citing the following
+ reference:
+\end_layout
+
+\begin_layout Itemize
+Álvarez-Gómez, J.A.
+ (2014) FMC: a one-liner Python program to manage, classify and plot focal
+ mechanisms.
+ Geophysical Research Abstracts, Vol.
+ 16, EGU2014-10887.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Part
+The manual
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+This is the user manual for the program 
+\family typewriter
+FMC
+\family default
+ (from Focal Mechanisms Classification).
+ This program has been developed on Python 2.7.3 and adapts some of the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "gasp03"
+
+\end_inset
+
+ FORTRAN routines to obtain the different parameters of the earthquake focal
+ mechanisms depending on the input format.
+ Several output formats are eligible and a classification diagram for the
+ focal mechanisms is produced.
+ The input and output formats are the same used by the GMT program 
+\family typewriter
+psmeca
+\family default
+ in order to make the program integration easiest and facilitate the mapping
+ of the data.
+\end_layout
+
+\begin_layout Standard
+The program basically takes the focal mechanisms data, computes the different
+ parameters that can be obtained, classifies each focal mechanism in one
+ of seven possible types, and optionally outputs the parameters in different
+ formats and generates a classification diagram from the input data.
+\end_layout
+
+\begin_layout Section
+Versions
+\end_layout
+
+\begin_layout Paragraph
+1.01
+\end_layout
+
+\begin_layout Standard
+New features:
+\end_layout
+
+\begin_layout Itemize
+Column number is now included in the header of the output file with all
+ the parameters.
+\end_layout
+
+\begin_layout Standard
+Bug fixes:
+\end_layout
+
+\begin_layout Itemize
+Error in the nd2ar function to obtain the tensor components from the nodal
+ planes.
+\end_layout
+
+\begin_layout Paragraph
+1.0
+\end_layout
+
+\begin_layout Standard
+Initial release of FMC with basic plotting function and focal mechanims
+ management.
+\end_layout
+
+\begin_layout Section
+Installation
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+FMC
+\family default
+ has been programmed in Python 2.7.3 and uses several common python libraries:
+ 
+\family typewriter
+sys
+\family default
+, 
+\family typewriter
+argparse
+\family default
+, 
+\family typewriter
+os
+\family default
+, 
+\family typewriter
+NumPy
+\family default
+ and 
+\family typewriter
+matplotlib
+\family default
+.
+ Depending on your operative system and Python installation you could need
+ to install some of the libraries manually.
+\end_layout
+
+\begin_layout Standard
+For 
+\series bold
+Windows
+\series default
+ and 
+\series bold
+Mac
+\series default
+ users a good starting point is the installation of predefined packages.
+ From 
+\begin_inset CommandInset href
+LatexCommand href
+target "www.SciPy.org"
+
+\end_inset
+
+ you can download program packages that includes
+\family typewriter
+ Python
+\family default
+, 
+\family typewriter
+NumPy
+\family default
+ and 
+\family typewriter
+matplotlib
+\family default
+, as well as other modules and IDEs.
+ With one of these packages installed 
+\family typewriter
+FMC
+\family default
+ should work properly.
+\end_layout
+
+\begin_layout Standard
+For 
+\series bold
+Linux
+\series default
+ users all the required software can be easily installed through your favorite
+ distribution repository (the python modules
+\family typewriter
+ sys
+\family default
+, 
+\family typewriter
+argparse
+\family default
+ and 
+\family typewriter
+os
+\family default
+ are usually installed with the default python installation).
+\end_layout
+
+\begin_layout Section
+Usage
+\end_layout
+
+\begin_layout Standard
+The user interface is as simple as a 
+\begin_inset Quotes eld
+\end_inset
+
+command line
+\begin_inset Quotes erd
+\end_inset
+
+, or a 
+\begin_inset Quotes eld
+\end_inset
+
+terminal
+\begin_inset Quotes erd
+\end_inset
+
+.
+ I decided to keep the program as simple as possible so it can be integrated
+ into scripts with other programs such as 
+\begin_inset CommandInset href
+LatexCommand href
+name "GMT"
+target "http://www.soest.hawaii.edu/gmt5/"
+
+\end_inset
+
+, 
+\family typewriter
+AWK (or 
+\begin_inset CommandInset href
+LatexCommand href
+name "gawk"
+target "http://www.gnu.org/software/gawk/"
+
+\end_inset
+
+)
+\family default
+ or any other tool running from a shell or script (in *nix) or a command
+ window or batch file (in Windows/DOS).
+ In the following the commands are written assuming that your python installatio
+n recognizes automatically the python format.
+ In some systems, depending on your personal configuration, you will need
+ to call first Python (like 
+\begin_inset Quotes eld
+\end_inset
+
+python FMC.py ...
+\begin_inset Quotes erd
+\end_inset
+
+) or in a *nix system with the 
+\begin_inset Quotes eld
+\end_inset
+
+./
+\begin_inset Quotes erd
+\end_inset
+
+ needed to execute a script (like ./FMC.py ...).
+\end_layout
+
+\begin_layout Standard
+In *nix you will need to give execution permission to the program:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+chmod +x FMC.py
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+To run 
+\family typewriter
+FMC
+\family default
+ on a file simply type in the terminal:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+FMC.py input-file.dat
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+By default 
+\family typewriter
+FMC
+\family default
+ will read the input file as a 
+\family typewriter
+psmeca
+\family default
+ Centroid Moment Tensor (CMT) format (in Harvard convention).
+ This kind of file can be downloaded directly from 
+\begin_inset CommandInset href
+LatexCommand href
+name "Global CMT"
+target "http://www.globalcmt.org/"
+
+\end_inset
+
+.
+ The output will be shown on the screen in
+\family typewriter
+ psmeca
+\family default
+ CMT format so it can be directly pipe into 
+\family typewriter
+psmeca:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+FMC.py input-file.dat | psmeca -R {...etc}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Or stored as an ASCII file:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+FMC.py input-file.dat > output-file.dat
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this case 
+\family typewriter
+FMC
+\family default
+ will add a new column at the end of each register with the focal mechanism
+ type.
+\end_layout
+
+\begin_layout Standard
+Alternatively the input file can be a single plane in 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "aki80"
+
+\end_inset
+
+ convention (Right Hand Rule for the plane orientation, and rakes from 0
+ to 180 in reverse faults and 0 to -180 in normal faults, 0 for left-lateral
+ and 
+\begin_inset Formula $\pm$
+\end_inset
+
+180 for right-lateral).
+ This format is also compatible with 
+\family typewriter
+psmeca
+\family default
+.
+ 
+\end_layout
+
+\begin_layout Subsection
+Input
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+FMC
+\family default
+ input can be given as an ASCII file or as standard input, from a pipe (
+\begin_inset Quotes eld
+\end_inset
+
+|
+\begin_inset Quotes erd
+\end_inset
+
+) or a redirection (
+\begin_inset Quotes eld
+\end_inset
+
+<
+\begin_inset Quotes erd
+\end_inset
+
+).
+ The following codes are then equivalent:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+FMC.py input-file.dat
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+cat input-file.dat | FMC.py
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+FMC.py < input-file.dat
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If no input is given, then 
+\family typewriter
+FMC
+\family default
+ will show the on-screen help.
+\end_layout
+
+\begin_layout Standard
+The
+\series bold
+ 
+\series default
+input format is specified with the optional flag 
+\begin_inset Quotes eld
+\end_inset
+
+
+\family typewriter
+-i
+\family default
+
+\begin_inset Quotes erd
+\end_inset
+
+, and the possible values are:
+\end_layout
+
+\begin_layout Description
+CMT Harvard Centroid Moment Tensor (by default):
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+[longitude, latitude, depth, mrr, mtt, mff, mrt, mrf, mtf, Exponent (dyn-cm),
+ X plot, Y plot (for GMT), ID]
+\end_layout
+
+\begin_layout Description
+AR Aki and Richards one plane convention:
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+[longitude, latitude, depth, strike, dip, rake, magnitude (Mw), X plot,
+ Y plot (for GMT), ID]
+\end_layout
+
+\begin_layout Subsection
+output
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+FMC
+\family default
+ output format can be selected among the following options with the flag
+ 
+\begin_inset Quotes eld
+\end_inset
+
+
+\family typewriter
+-o
+\family default
+
+\begin_inset Quotes erd
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Description
+CMT Harvard Centroid Moment Tensor (
+\family typewriter
+psmeca
+\family default
+ compatible):
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+[longitude, latitude, depth, mrr, mtt, mff, mrt, mrf, mtf, Exponent (dyn·cm),
+ X plot, Y plot (for GMT), ID, TYPE]
+\end_layout
+
+\begin_layout Description
+P Focal mechanism both nodal planes (
+\family typewriter
+psmeca
+\family default
+ compatible):
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+[longitude, latitude, depth, strike A, dip A, rake A, strike B, dip B, rake
+ B, Scalar seismic moment mantissa, Exponent (dyn·cm), X plot, Y plot (for
+ GMT), ID, TYPE]
+\end_layout
+
+\begin_layout Description
+AR Focal mechanism one plane (
+\family typewriter
+psmeca
+\family default
+ compatible):
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+[longitude, latitude, depth, strike, dip, rake, magnitude (Mw), X plot,
+ Y plot (for GMT), ID, TYPE]
+\end_layout
+
+\begin_layout Description
+K Kaverina diagram position for plotting outside FMC:
+\begin_inset Newline newline
+\end_inset
+
+
+\family typewriter
+[X Kaverina diagram, Y Kaverina diagram, Mw, Depth, ID, TYPE]
+\end_layout
+
+\begin_layout Description
+ALL All the parameters obtained:
+\family typewriter
+
+\begin_inset Newline newline
+\end_inset
+
+[longitude, latitude, depth, mrr, mtt, mff, mrt, mrf, mtf, Exponent (dyn·cm),
+ Scalar seismic moment (dyn·cm), Mw, strike A, dip A, rake A, strike B,
+ dip B, rake B, P trend, P plunge, B trend, B plunge, T trend, T plunge,
+ fclvd, X Kaverina diagram, Y Kaverina diagram, ID, TYPE]
+\end_layout
+
+\begin_layout Subsection
+Plot
+\end_layout
+
+\begin_layout Standard
+Optionally 
+\family typewriter
+FMC
+\family default
+ will produce a classification diagram.
+ 
+\family typewriter
+FMC
+\family default
+ uses 
+\family typewriter
+matplotlib
+\family default
+ libraries and can generate figures in different formats (emf, eps, jpeg,
+ jpg, pdf, png, ps, raw, rgba, svg, svgz, tif, tiff).
+ The format is determined automatically from the plot file name extension.
+\end_layout
+
+\begin_layout Standard
+The diagram uses the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kave96"
+
+\end_inset
+
+ projection technique, used also by 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kaga05"
+
+\end_inset
+
+; but incoporating a classification similar to the geological conceptual
+ classification of faults.
+ The earthquakes are classified into seven types according to the values
+ of the P, T and B Centroid Moment Tensor axes following a simple algorithm
+ (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig_flow"
+
+\end_inset
+
+), and are represented conveniently on the Kaverina diagram (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig_diagram"
+
+\end_inset
+
+).
+ This classification is very similar to the used by 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "EPRI"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename diagram_flow.pdf
+	display false
+	scale 60
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Focal mechanism classification algorithm flow chart.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig_flow"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename diagram.pdf
+	display false
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Classification diagram.
+ N: Normal; N-SS: Normal - Strike-slip; SS-N: Strike-slip - Normal; SS:
+ Strike-slip; SS-R: Strike-slip - Reverse; R-SS: Reverse - Strike-slip;
+ R: Reverse.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig_diagram"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Examples of use
+\end_layout
+
+\begin_layout Subsubsection
+Obtaining nodal planes from moment tensor
+\end_layout
+
+\begin_layout Standard
+Command:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+echo -2.54 37.09 12 -3.4669 -2.0652 5.5321 6.2368 -1.8004 -5.1775 22 X Y ID | 
+\series bold
+FMC.py -o P
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Result:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+#Lon Lat Depth Strike_A Dip_A Rake_A Strike_B Dip_B Rake_B Seismic_moment_mantis
+sa Exponent_(dyn-cm) X_position Y_position ID Mechanism_type
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+-2.54 37.09 12 190.925 42.4899 -20.9735 296.709 76.0089 -130.541 9.604500 22 X Y
+ ID N-SS
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Obtaining moment tensor from one nodal plane
+\end_layout
+
+\begin_layout Standard
+Command:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\series bold
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+echo -2.54 37.09 12 190.925 42.4899 -20.9735 4.6 X Y ID | 
+\series bold
+FMC.py -i AR -o CMT
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Result:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+#Lon Lat Depth mrr mtt mff mrt mrf mtf Exponent_(dyn-cm) X_position Y_position
+ ID Mechanism_type
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+-2.54 37.09 12 -3.17787 -1.97794 4.62601 4.62601 -5.15581 -4.62601 22 X Y ID N-SS
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Obtaining all the parameters from the moment tensor
+\end_layout
+
+\begin_layout Standard
+Command:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\series bold
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+echo -2.54 37.09 12 -3.4669 -2.0652 5.5321 6.2368 -1.8004 -5.1775 22 X Y ID | 
+\series bold
+FMC.py -o ALL
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Result:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+#Lon Lat Depth mrr mtt mff mrt mrf mtf Exponent_(dyn-cm) Scalar_seismic_moment
+ (dyn-cm) Mw Strike_A Dip_A Rake_A Strike_B Dip_B Rake_B P_Trend P_plunge
+ B_trend B_plunge T_trend T_plunge fclvd X_Kaverina_diagram Y_Kaverina_diagram
+ ID Mechanism_type
+\end_layout
+
+\begin_layout Plain Layout
+
+\family typewriter
+-2.54 37.09 12 -3.4669 -2.0652 5.5321 6.2368 -1.8004 -5.1775 22 9.6045e+22 4.62165
+ 190.925 42.4899 -20.9735 296.709 76.0089 -130.541 167.141 43.8185 308.393 39.1024
+ 56.0979 20.5155 0.0445259 -0.243839 0.0899979 ID N-SS
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Obtaining all the parameters from CMT input file and storing to an ASCII
+ file
+\end_layout
+
+\begin_layout Standard
+Command:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\series bold
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+\series bold
+FMC.py -o ALL japan_CMT.dat > Japan_parameters.dat
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Plotting data from standard input
+\end_layout
+
+\begin_layout Standard
+Command:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\series bold
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+echo -2.54 37.09 12 -3.4669 -2.0652 5.5321 6.2368 -1.8004 -5.1775 22 X Y ID | 
+\series bold
+FMC.py -p CMT_data.pdf
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename CMT_data.png
+	display false
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Plot result from the command 
+\family typewriter
+
+\begin_inset Quotes eld
+\end_inset
+
+echo -2.54 37.09 12 -3.4669 -2.0652 5.5321 6.2368 -1.8004 -5.1775 22 X Y ID | FMC.py
+ -p CMT_data.pdf
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Plotting data from input file
+\end_layout
+
+\begin_layout Standard
+Command:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\series bold
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+\series bold
+FMC.py -p 'Japan data.pdf' japan_CMT.dat
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename Japan data.png
+	display false
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Plot result from the command 
+\family typewriter
+
+\begin_inset Quotes eld
+\end_inset
+
+FMC.py -p 'Japan data.pdf' japan_CMT.dat
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Plotting data from input file and piping to psmeca
+\end_layout
+
+\begin_layout Standard
+Command:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+\begin_inset Box Shadowbox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+
+\family typewriter
+\series bold
+FMC.py -p 'Japan data.pdf' japan_CMT.dat
+\series default
+ | psmeca -R125/170/30/60 -JM8c -Ba10f2WESN -Sm5p/-1 > CMT_map.ps
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename CMT_map.pdf
+	display false
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Map generated with 
+\family typewriter
+psmeca
+\family default
+ (
+\family typewriter
+GMT
+\family default
+) from the 
+\family typewriter
+FMC
+\family default
+ output.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+License
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+FMC
+\family default
+ has been developed with Free Software and/or Open Source tools.
+ 
+\family typewriter
+FMC
+\family default
+ uses NumPy and matplotlib which are distributed under BSD license.
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+FMC
+\family default
+ is distributed under 
+\begin_inset CommandInset href
+LatexCommand href
+name "GNU Generic Public License"
+target "http://www.gnu.org/copyleft/gpl.html"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Part
+The background
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+Seismicity is frequently used to deduce the tectonics of a region.
+ The study of earthquakes as a tectonic component, the seismotectonics 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "scholz"
+
+\end_inset
+
+, has grown as one of the key research areas on active tectonics, specially
+ from the analysis of earthquake focal mechanisms.
+\end_layout
+
+\begin_layout Standard
+The first focal mechanism determination methods, based on P wave's first
+ motion polarities, were developed on the first half of the 20th century,
+ specially in Japan where a dense seismic network were available 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "byer28,byer38,koni41,hond52,sche57"
+
+\end_inset
+
+.
+ Since 1960 the development of the digital computer allow the numerical
+ determination of fault-plane solutions with different methods 
+\begin_inset CommandInset citation
+LatexCommand citep
+before "e.g."
+key "knop61,lang75,dzie81"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In parallel with the development of the modern seismology, the theory of
+ Plate Tectonics changed the way geologists understand the Earth.
+ Since the end of the 16th century naturalists made observations on the
+ potential continental drifting; but it was in the early 20th century when
+ the theory started to be formally proposed 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "tayl10,wege12,schw19,holm31"
+
+\end_inset
+
+.
+ The relevant information acquired on the magnetic stripes on the ocean
+ floor in the 60's 
+\begin_inset CommandInset citation
+LatexCommand citep
+before "e.g."
+key "hess62,vine66,lepi68,morg68"
+
+\end_inset
+
+, in addition to an increasing number of geological and geophysical observations
+, established the Plate Tectonics as the global geodynamical paradigm on
+ Earth Sciences.
+ The study of earthquakes related to Plate Tectonics was developed at the
+ same time establishing the basic concepts of seismotectonics and the lithospher
+ic deformation 
+\begin_inset CommandInset citation
+LatexCommand citep
+before "e.g."
+key "beni54,syke67,isac68,isac69"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Since the 70's focal mechanisms are computed in a systematic way and global
+ catalogs of focal mechanisms are available since then.
+ As the amount of data increases, our knowledge on the active tectonics
+ improves.
+ As a consequence of the continuous increase of data available we need new
+ tools to analyze it systematically.
+\end_layout
+
+\begin_layout Standard
+In order to represent focal mechanism populations 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "froh92"
+
+\end_inset
+
+ proposed a diagram to visualize focal mechanism data as a function of the
+ rupture type.
+ This kind of representation is popular and widely used on seismotectonics
+ to represent the focal mechanism types of the study areas 
+\begin_inset CommandInset citation
+LatexCommand citep
+before "e.g."
+key "froh97,borg01,igar01,ratc02,kita06,serp07"
+
+\end_inset
+
+.
+ This representation is not accurate, presenting distortion problems 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "froh01"
+
+\end_inset
+
+, and 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kaga05"
+
+\end_inset
+
+ used the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kave96"
+
+\end_inset
+
+ projection to avoid them.
+ The latter projection is used in 
+\family typewriter
+FMC
+\family default
+ by default.
+\end_layout
+
+\begin_layout Section
+The focal mechanism
+\end_layout
+
+\begin_layout Standard
+The term 
+\begin_inset Quotes eld
+\end_inset
+
+focal mechanism
+\begin_inset Quotes erd
+\end_inset
+
+ is used to refer to the parameters that characterize an earthquake rupture.
+ A focal mechanism usually presents the characteristics of the two orthogonal
+ possible rupture planes: strike, dip and rake of the slip vector over the
+ plane.
+ The energy released by the event, its hypocentral location and the exact
+ time of occurrence are also given.
+ The focal mechanism can, instead of describe the geometry of the possible
+ rupture planes (6 variables), describe the characteristics of the rupture
+ by means of the seismic moment tensor (SMT) or centroid moment tensor (CMT)
+ (6 variables).
+\end_layout
+
+\begin_layout Standard
+The SMT is based in the representation of the equivalent forces on a point
+ seismic source.
+ In this tensor the sum of angular moments should be null, in other words,
+ the SMT is a symmetric tensor on a three dimensional space (9 components)
+ with 6 independent components:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\pmb{M}=\begin{pmatrix}M_{XX} & M_{XY} & M_{XZ}\\
+M_{YX} & M_{YY} & M_{YZ}\\
+M_{ZX} & M_{ZY} & M_{ZZ}
+\end{pmatrix}
+\end{equation}
+
+\end_inset
+
+where
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray}
+M_{XY}=M_{YX}\nonumber \\
+M_{XZ}=M_{ZX}\\
+M_{YZ}=M_{ZY}\nonumber 
+\end{eqnarray}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Similarly to the strain tensor where we can define the orientation of the
+ principal axes (eigenvectors) and its magnitudes (eigenvalues), the SMT
+ can be defined by the orientation of its principal axes P, B and T (eigenvector
+s) and its magnitudes (eigenvalues).
+ The T axis describes the greatest of the eigenvalues, the P describes the
+ lowest and the B the intermediate.
+\end_layout
+
+\begin_layout Standard
+If the seismic event is generated by the slip in a fault rupture, its characteri
+stics should be well described as a double couple moment tensor (Figure
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig1"
+
+\end_inset
+
+): 
+\begin_inset Formula 
+\begin{equation}
+\pmb{M}=\begin{bmatrix}M_{0} & 0 & 0\\
+0 & -M_{0} & 0\\
+0 & 0 & 0
+\end{bmatrix}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $M_{0}$
+\end_inset
+
+ is the scalar seismic moment.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename /home/jose/curro/Articulos/desarrollo/fmc/computers/figuras/fig1.pdf
+	display false
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Double couple deformation mechanism.
+ a) Plan view of horizontal displacement on an idealized point vertical
+ fault A-A' or F-F' and resulting distribution of compressions (+) and dilatatio
+ns (-).
+ b) Focal mechanism representation on a stereographic projection.
+ Compression quadrants are filled.
+ c) Horizontal displacement produced by a point size vertical dislocation
+ computed with the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "okad92"
+
+\end_inset
+
+ equations; compressional quadrants are filled while dilatational are kept
+ empty following the focal mechanism representation.
+ a) and b) modified from 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "bullen"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig1"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The most used representation of the double couple is based on the stereographic
+ projection.
+ In this projection both nodal planes of the focal mechanism are plotted,
+ and the quadrants containing the T axis, the compression quadrants, are
+ filled (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig1"
+
+\end_inset
+
+).
+ This kind of representation - commonly called 
+\begin_inset Quotes eld
+\end_inset
+
+beach-ball
+\begin_inset Quotes erd
+\end_inset
+
+ - located on a map on the earthquake epicenter is useful to interpret the
+ seismic data from a tectonic point of view, allowing the study of the earthquak
+e and its rupture fault plane on its tectonic context, being one of the
+ basis of the seismotectonics.
+ The compressional and dilatational quadrants are separated by two orthogonal
+ planes, the nodal planes, being one of them the plane of rupture that generated
+ the earthquake (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig2"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+As we increase the number of focal mechanisms to study, we increase the
+ difficulty to interpret the data, obscuring frequently the details of a
+ tectonic environment if we just project them over a map.
+ In order to facilitate the study of groups of focal mechanisms several
+ plots can be proposed, great part of them based on classical structural
+ geology plots.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename /home/jose/curro/Articulos/desarrollo/fmc/computers/figuras/fig2.pdf
+	display false
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+a) Focal sphere diagram on stereographic projection on the lower hemisphere.
+ Nodal planes A and B, A representing the fault plane and B the auxiliary
+ plane, with its orientation characteristics: 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+$
+\backslash
+varphi$
+\end_layout
+
+\end_inset
+
+, strike; 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+$
+\backslash
+delta$
+\end_layout
+
+\end_inset
+
+, dip and 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+$
+\backslash
+lambda$
+\end_layout
+
+\end_inset
+
+, rake.
+ The orientation of the SMT principal axes are also shown: T, B and P.
+ Modified from 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "udia89"
+
+\end_inset
+
+.
+ b) Block diagram showing the parameters that define the orientation of
+ a fault plane in the space: 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+$
+\backslash
+varphi$
+\end_layout
+
+\end_inset
+
+, strike; 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+$
+\backslash
+delta$
+\end_layout
+
+\end_inset
+
+, dip and 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+$
+\backslash
+lambda$
+\end_layout
+
+\end_inset
+
+, rake.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig2"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The plots inherited from the structural geology are based in the geometrical
+ characteristics of the nodal planes of the SMT, equivalent to the characteristi
+cs of the fault planes: strike (
+\begin_inset Formula $\varphi$
+\end_inset
+
+), dip (
+\begin_inset Formula $\delta$
+\end_inset
+
+) and rake (
+\begin_inset Formula $\lambda$
+\end_inset
+
+) (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig2"
+
+\end_inset
+
+).
+ The main problem of these representations is the duplication of data.
+ Each focal mechanism presents two equivalent and orthogonal nodal planes.
+ The selection of one of them as the fault plane is not straightforward
+ and although from a mechanical point of view they can be discriminated
+ 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "mcke69,mich87,geph90"
+
+\end_inset
+
+, when both nodal planes are mechanically compatible or reactivated structures
+ can be present, additional geological and/or geophysical information is
+ required.
+ There are as many representations of this kind as possible combinations
+ between these parameters and its derivatives (usually trigonometrical functions
+).
+ These relations can be represented in biaxial plots or stereographic projection
+s 
+\begin_inset CommandInset citation
+LatexCommand citep
+before "e.g."
+key "davi96,rams97,poll05"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The focal mechanisms can also be plotted as function of the principal axes
+ T, B and P.
+ These axes form an orthogonal system.
+ The orientation of each axis can be defined in the space as any line, by
+ its direction and plunge.
+ The main advantages of these representations are: the univocality, each
+ focal mechanism is represented by one point; its simplicity of interpretation,
+ the kind of deformation (normal, reverse, strike-slip) is function of the
+ plunge of the axes; and the reduction of errors compared with the planes,
+ as they are derived from the principal axes of the SMT 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "vann03"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Diagram
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset citation
+LatexCommand cite
+key "froh92"
+
+\end_inset
+
+ developed a ternary diagram to represent focal mechanisms based in the
+ trigonometrical relation: 
+\begin_inset Formula 
+\begin{equation}
+\sin^{2}\iota_{T}+\sin^{2}\iota_{B}+\sin^{2}\iota_{P}=1,
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\iota_{T}$
+\end_inset
+
+, 
+\begin_inset Formula $\iota_{B}$
+\end_inset
+
+ and 
+\begin_inset Formula $\iota_{P}$
+\end_inset
+
+ are the plunges of the axis T, B and P of the SMT.
+ This relation is true for three orthogonal axes.
+\end_layout
+
+\begin_layout Standard
+As the equation of a sphere with radius unity is 
+\begin_inset Formula 
+\begin{equation}
+x^{2}+y^{2}+z^{2}=1
+\end{equation}
+
+\end_inset
+
+and all the plunge angles are positive between 0°and 90°, then the representatio
+n of a focal mechanism defined by these axes is equivalent to the projection
+ of a point in an spherical octant over a planar surface.
+ As a sphere is not a developable surface can not be projected onto a plane
+ without distortion.
+\end_layout
+
+\begin_layout Standard
+The projection used by 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "froh92"
+
+\end_inset
+
+ represents this spherical octant as a triangle, which is equivalent to
+ the gnomonic geographical projection.
+ In this projection we define the angles 
+\begin_inset Formula 
+\begin{equation}
+\psi=\arctan\left(\dfrac{\sin\iota_{T}}{\sin\iota_{P}}\right)-45^{\circ},
+\end{equation}
+
+\end_inset
+
+and 
+\begin_inset Formula 
+\begin{equation}
+\iota_{s}=\arcsin\dfrac{1}{\sqrt{3}}=\arctan\dfrac{1}{\sqrt{2}}\approx35.26^{\circ},
+\end{equation}
+
+\end_inset
+
+which is the angle of the ternary symmetry axis with the orthogonal axes
+ of the octant.
+\end_layout
+
+\begin_layout Standard
+From these angles the 
+\begin_inset Formula $x$
+\end_inset
+
+ and 
+\begin_inset Formula $y$
+\end_inset
+
+ coordinates over the plane are given by: 
+\begin_inset Formula 
+\begin{eqnarray}
+x=\dfrac{\cos\iota_{B}\cdot\sin\psi}{\sin\iota_{s}\cdot\sin\iota_{B}+\cos\iota_{s}\cdot\sin\iota_{B}\cdot\cos\psi}\\
+y=\dfrac{\cos\iota_{s}\cdot\sin\iota_{B}-\sin\iota_{s}\cdot\cos\iota_{B}\cdot\cos\psi}{\sin\iota_{s}\cdot\sin\iota_{B}+\cos\iota_{s}\cdot\sin\iota_{B}\cdot\cos\psi}
+\end{eqnarray}
+
+\end_inset
+
+The angle 
+\begin_inset Formula $\iota_{s}$
+\end_inset
+
+ in the projection is the angle of the plunges of the axes T, B and P for
+ the focal mechanism that occupies the barycentre of the ternary diagram
+ where 
+\begin_inset Formula $x=y=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename /home/jose/curro/Articulos/desarrollo/fmc/computers/figuras/fig3.pdf
+	display false
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Representation of an hemisphere of the globe centred on Europe (45
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+textdegree
+\end_layout
+
+\end_inset
+
+ N, 15
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+textdegree
+\end_layout
+
+\end_inset
+
+ E) in the two different projections referenced in the text: a) Gnomonic
+ projection; b) Lambert azimuthal equal-area.
+ In thick lines are marked the spheric octant and some reference lines in
+ order to compare both projections.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig3"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As can be seen in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig3"
+
+\end_inset
+
+a this projection introduces remarkable distortions towards the extremes
+ of the diagram.
+ This distortions could difficult the study of some groups of focal mechanisms
+ as the author pointed out 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "froh01"
+
+\end_inset
+
+.
+ In order to avoid these distortions 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kave96"
+
+\end_inset
+
+ proposed the use of a projection capable of maintain the proportion of
+ the areas equal, equivalent to the Lambert azimuthal equal-area projection
+ (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig3"
+
+\end_inset
+
+b), which is the used in structural geology to generate the stereographic
+ equal-area Schmidt stereonet.
+ In this case the limits of the diagram are formed by great circles instead
+ of straight lines forming a triangle (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig3"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+If we take the sines of the plunges of the main axes 
+\begin_inset Formula $\iota_{T}$
+\end_inset
+
+, 
+\begin_inset Formula $\iota_{B}$
+\end_inset
+
+ and 
+\begin_inset Formula $\iota_{P}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray}
+z_{T}=\sin\iota_{T}\nonumber \\
+z_{P}=\sin\iota_{P}\\
+z_{B}=\sin\iota_{B}\nonumber 
+\end{eqnarray}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+the length of the vector that connects the center of the diagram with the
+ projected point is defined by
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+L=2\sin\left[\frac{1}{2}\cdot\arccos\left(\dfrac{z_{T}+z_{P}+z_{B}}{\sqrt{3}}\right)\right]
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and the normalization factor is:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+N=\sqrt{2\cdot[(z_{B}-z_{P})^{2}+(z_{B}-z_{T})^{2}+(z_{T}-z_{P})^{2}]}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The coordinates of the projected focal mechanisms in the plane are defined
+ as follows (these equations corrects the wrong equations showed in 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kaga05"
+
+\end_inset
+
+):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray}
+x=\sqrt{3}\cdot\frac{L}{N}\cdot(z_{P}-z_{T})\nonumber \\
+y=\frac{L}{N}\cdot(2z_{B}-z_{P}-z_{T})
+\end{eqnarray}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Focal Mechanism Classification
+\end_layout
+
+\begin_layout Standard
+In order to classify the focal mechanisms 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kaga05"
+
+\end_inset
+
+ divided the octant in three areas (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig4"
+
+\end_inset
+
+b) corresponding to the three basic Andersonian regimes: normal, reverse
+ and strike-slip.
+ The dividing lines start at the diagram center and run through the middle
+ of each great circle (dashed lines in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig4"
+
+\end_inset
+
+b).
+ This classification, although simple and straightforward, is too basic
+ sometimes for a detailed seismotectonic study.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename /home/jose/curro/Articulos/desarrollo/fmc/computers/figuras/fig4.pdf
+	display false
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Focal mechanisms classification diagrams based on SMT axes plunges proposed
+ by a) 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "froh92"
+
+\end_inset
+
+ and b) 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kaga05"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig4"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+From the seismotectonic point of view an earthquake reflects the brittle
+ lithospheric strain produced by tectonic processes.
+ The vast majority of earthquakes are produced by displacements on faults
+ (some other processes as deep volume changes or cave collapses can produce
+ seismic signals too), and they are interpreted usually as fault ruptures.
+ Following this reasoning the most appropriate classification for the focal
+ mechanism should be done by means of the slip vector on the fault, given
+ by the rake angle.
+ This classification can be done following one of the proposed conventions
+ 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "rick72,aki80,ange94"
+
+\end_inset
+
+.
+ As has been mentioned before, the problem is the duplicity of data due
+ to the two nodal planes solution of the focal mechanism.
+\end_layout
+
+\begin_layout Standard
+An extended discussion on the relation among the different focal mechanism
+ parameters can be found on 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "cele10"
+
+\end_inset
+
+; the author also points out the difficulty on interpreting the stress state
+ from the focal mechanisms, specially where oblique faulting takes place
+ and reactivation of inherited structures is possible 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "wyss92"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+However the SMT can be interpreted as a seismic strain tensor 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "kost74"
+
+\end_inset
+
+ where the main axes are equivalent to the SMT main axes 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "wyss92"
+
+\end_inset
+
+.
+ With this relation in mind we can interpret the populations of focal mechanisms
+ as representations of strains in different tectonic settings.
+ Oblique slip focal mechanisms with normal component can be interpreted
+ as transtensional strain, while oblique slip focal mechanisms with reverse
+ component can be interpreted as transpressional.
+\end_layout
+
+\begin_layout Standard
+In order to count with a classification more detailed than the one of 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "kaga05"
+
+\end_inset
+
+ I decided to classify the focal mechanism in a series of fields that include
+ the oblique slip regimes 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "tesis"
+
+\end_inset
+
+.
+ This approximation is similar to the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "EPRI"
+
+\end_inset
+
+ classification; with 7 classes of earthquakes: 1) Normal; 2) Normal - Strike-sl
+ip; 3) Strike-slip - Normal; 4) Strike-slip; 5) Strike-slip - Reverse; 6)
+ Reverse - Strike-slip and 7) Reverse.
+ The resulting diagram incorporating this 7 fields classification to the
+ Kaverina projection is shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig5"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename /home/jose/curro/Articulos/desarrollo/fmc/computers/figuras/fig5.pdf
+	display false
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Focal mechanism classification diagram.
+ N) Normal; N-SS) Normal - Strike-slip; SS-N) Strike-slip - Normal; SS)
+ Strike-slip; SS-R) Strike-slip - Reverse; R-SS) Reverse - strike-slip and
+ R) Reverse.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig5"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The algorithm to classify the focal mechanisms based on the SMT main axes
+ plunges is the shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig_flow"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+When one of the three main SMT axes is greater or equal than 67.5
+\begin_inset Formula $^{\circ}$
+\end_inset
+
+ (resulted from 
+\begin_inset Formula $3*\frac{\nicefrac{\pi}{2}}{4}$
+\end_inset
+
+) we obtain a "pure" Andersonian tectonic regime.
+ From the pure normal or reverse faulting to the strike-slip faulting there
+ is a range of oblique faulting types with more or less relevance of the
+ horizontal component.
+ On the other hand between the pure normal and pure reverse faulting there
+ is a permutation of the T and P axes in the vertical position, while the
+ B axis remains horizontal.
+ The transition takes place when the P and T axes plunge equally and a vertical
+ nodal plane is present.
+\end_layout
+
+\begin_layout Standard
+In the following section I compare the results of both classifications,
+ the one based in the main axes plunges of the moment tensor and the one
+ based on the fault rakes.
+\end_layout
+
+\begin_layout Subsection
+Comparison between rake-based and SMT axes-based classifications
+\end_layout
+
+\begin_layout Standard
+In order to classify the nodal planes according to its rakes I adopted a
+ convention hybrid between the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "rick72"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "aki80"
+
+\end_inset
+
+ conventions.
+ The focal mechanism rakes are usually given with the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "aki80"
+
+\end_inset
+
+ convention, while from a geological point of view the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "rick72"
+
+\end_inset
+
+ convention is more used.
+ I define 7 equivalent classes to those used in the SMT axes-based classificatio
+ns (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig6"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename /home/jose/curro/Articulos/desarrollo/fmc/computers/figuras/fig6.pdf
+	display false
+	width 100text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Diagram showing the convention used in this work for the rake classification
+ of faults or focal mechanism nodal planes.
+ Inside the grey circle the equivalent SMT axes-based classification is
+ shown (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig3"
+
+\end_inset
+
+).
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig6"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Each one of the nodal planes of the focal mechanisms from the Global CMT
+ catalog 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "CMT"
+
+\end_inset
+
+ is classified according to the rake classification shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig6"
+
+\end_inset
+
+.
+ From the analysis of the focal mechanism alone we cannot choose unequivocally
+ the fault plane responsible of the earthquake.
+ To analyze the degree of uncertainty I show in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig7"
+
+\end_inset
+
+a the relative frequency of relations between nodal planes rupture types.
+ For example, it can be seen that when one nodal plane is classified as
+ normal, the other can be normal as well, or can present some strike-slip
+ component, but it can not present reverse component; the same can be said
+ for the reverse nodal planes.
+ When one nodal plane is pure strike-slip, the other can present dip-slip
+ component too, ranging from normal with strike-slip component (N-SS) to
+ reverse with strike-slip component (R-SS), but being more frequent the
+ relations between nodal planes of mainly strike-slip type.
+\end_layout
+
+\begin_layout Standard
+Comparing the focal mechanism classified with the SMT axes and the nodal
+ planes classified with the rakes (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig7"
+
+\end_inset
+
+b) a similar picture as the described above can be seen.
+ The percentages of relations change sensibly, but the common picture is
+ the same.
+ When the focal mechanism is classified as normal type we can expect that
+ both nodal planes are of normal type or normal with some strike-slip component.
+ Similarly when the focal mechanism is classified as reverse, both nodal
+ planes are mainly of the reverse type too.
+ For the case of the strike-slip focal mechanism almost all the nodal planes
+ are of strike-slip type too.
+\end_layout
+
+\begin_layout Standard
+We can conclude that there is not much difference between the results obtained
+ from the rake classification of the nodal planes and the classification
+ of the focal mechanism attending to the SMT axes plunges.
+ The focal mechanism classification based on the SMT axes has the advantage
+ of the univocallity of its classification, in contrast with the duplicity
+ of data and uncertainty related to the nodal planes rake classification.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\noindent
+\align center
+\begin_inset Graphics
+	filename /home/jose/curro/Articulos/desarrollo/fmc/computers/figuras/fig7.pdf
+	display false
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Heatmaps of the proportion of relations between a) both nodal planes rupture
+ type based on the rake classification, and b) between the focal mechanism
+ classification and the nodal planes rupture types rake classification.
+ The data used is the entire Global CMT catalog 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "CMT"
+
+\end_inset
+
+.
+ Numbers show percentages over the entire catalogue.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig7"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "/home/jose/curro/Articulos/biblio"
+options "bibtotoc,elsarticle-harv"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
