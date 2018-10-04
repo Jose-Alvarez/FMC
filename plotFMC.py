@@ -138,27 +138,33 @@ def baseplot(plotname):
 def circles(X,Y,size,color,plotname,label):
 	
 	fig=baseplot(plotname)
-	sc=plt.scatter(X,Y,s=size,c=color,alpha=0.7,linewidth=1.5)
-	cbar=plt.colorbar(sc,shrink=0.5)
-	cbar.set_label(label)
+	if str(color) == 'white':
+		sc=plt.scatter(X,Y,s=size,c=color,alpha=0.7,linewidth=1.5)
+	else:
+		sc=plt.scatter(X,Y,s=size,c=color,alpha=0.7,linewidth=1.5,cmap='plasma_r')
+		cbar=plt.colorbar(sc,shrink=0.5)
+		cbar.set_label(label)
 	# legend
-	plt.scatter (0.3,0.9,s=40,c='white',linewidth=1.5)
-	plt.scatter (0.4,0.9,s=50,c='white',linewidth=1.5)
-	plt.scatter (0.5,0.9,s=60,c='white',linewidth=1.5)
-	plt.scatter (0.6,0.9,s=70,c='white',linewidth=1.5)
-	plt.scatter (0.7,0.9,s=80,c='white',linewidth=1.5)
+	plt.scatter (0.3,0.9,s=16,c='white',linewidth=1.5)
+	plt.scatter (0.4,0.9,s=25,c='white',linewidth=1.5)
+	plt.scatter (0.5,0.9,s=36,c='white',linewidth=1.5)
+	plt.scatter (0.6,0.9,s=49,c='white',linewidth=1.5)
+	plt.scatter (0.7,0.9,s=64,c='white',linewidth=1.5)
+	plt.scatter (0.8,0.9,s=81,c='white',linewidth=1.5)
 	plt.text (0.3,.95,'4',fontsize=10)
 	plt.text (0.4,.95,'5',fontsize=10)
 	plt.text (0.5,.95,'6',fontsize=10)
 	plt.text (0.6,.95,'7',fontsize=10)
 	plt.text (0.7,.95,'8',fontsize=10)
-	plt.text (0.75,.95,'Mw',fontsize=10)
+	plt.text (0.8,.95,'9',fontsize=10)
+	plt.text (0.85,.95,'Mw',fontsize=10)
 	return fig
 
-def annot(X,Y,size,color,plotname,label,annots):
+def annot(X,Y,size,color,plotname,label,annots,lab_param):
 
 	fig=circles(X,Y,size,color,plotname,label)
 	for i, txt in enumerate(annots):
-    		plt.annotate(txt, (X[i]+0.02,Y[i]+0.02),horizontalalignment='left',verticalalignment='bottom',rotation=30,size='x-small')
+    		plt.annotate(str(txt).strip(".'[]'"), (X[i]+0.01,Y[i]+0.01),horizontalalignment='left',verticalalignment='bottom',rotation=30,size='x-small')
+    		plt.text (1.4,-0.75,'Text label:\n'+str(lab_param).strip("'[]'").replace("_"," "),fontsize=10,horizontalalignment='right',verticalalignment='top')
 
 	return fig

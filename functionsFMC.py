@@ -259,13 +259,14 @@ def moment(am):
 	
 	return am0, fclvd, dval, vect
 
-def HC(data,meth,num_clust):
+def HC(data,meth,metr,num_clust):
 	# Mahalanobis Hierarchycal Clustering
 	# 	data: 	the set of variables used to perform the clustering analysis
 	#	method:	method to perform the HCA [single(default), complete, average, weighted, average, centroid, median, ward]
+	#	metric: the metric to perform the HCA [euclidean(default), mahalanobis]
 	#	num_clust:	predefined number of clusters, if not present then it is automatically computed with "diff".
-	# by default metric="mahalanobis"
-	li = hac.linkage(data, method=meth, metric='euclidean')
+	
+	li = hac.linkage(data, method=meth, metric=metr)
 	if num_clust == 0:
 		knee = diff(li[::-1, 2], 2)
 		num_clust = knee.argmax() + 2

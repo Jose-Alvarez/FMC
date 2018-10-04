@@ -34,14 +34,14 @@
 
 import sys, argparse
 from argparse import RawTextHelpFormatter, ArgumentParser
-from numpy import c_, vstack, array, zeros, asarray, genfromtxt, atleast_2d, shape, log10
+from numpy import c_, vstack, array, zeros, asarray, genfromtxt, atleast_2d, shape, log10, array2string
 from functionsFMC import *
 from plotFMC import *
 
 # All the command line parser thing.
 parser = ArgumentParser(description='Focal mechanism process\
- and classification.', formatter_class=RawTextHelpFormatter )
-parser.add_argument('infile', nargs='?') #, class=argparse.Fileclass('r'), default=sys.stdin
+ and classification.\nVersion 1.3', formatter_class=RawTextHelpFormatter )
+parser.add_argument('infile', nargs='?')
 parser.add_argument('-i' ,nargs=1,default=['CMT'],choices=['CMT','AR'], \
 help='Input file format.\n\
 Choose between:\n\
@@ -70,8 +70,9 @@ circles with color in the classification diagram.\n\
 Type "FMC.py -helpFields" to obtain information on the data fields\n\
 that can be used.\n\
 By default FMC uses white circles or, for the clustering, the cluster number.\n ')
-parser.add_argument('-a',action='count',\
-help='If present the program will plot labels with the ID on the diagram plot.\n ')
+parser.add_argument('-a',nargs='?',\
+help='If present the program will plot labels with the selected parameter on the diagram plot.\n\
+Type "FMC.py -helpFields" to obtain information on the data fields that can be used. \n ')
 parser.add_argument('-cm',nargs='?',choices=['single','complete','average','weighted','centroid','median','ward'], \
 help='If present FMC will perform a hierarchical clustering analysis\n\
 of the focal mechanisms distribution on the Kaverina diagram\n\
@@ -82,7 +83,20 @@ with the method specified:\n\
 [weighted]: weighted/WPGMA\n\
 [centroid]: centroid/UPGMC [default]\n\
 [median]: median/WPGMC\n\
-[ward]: Ward\'s\n ')
+[ward]: Ward\'s\n\n\
+Methods centroid, median and ward are correctly defined only if "euclidean" metric is used.\n ')
+parser.add_argument('-ce',nargs='?', choices=['braycurtis', 'canberra', 'chebyshev', 'cityblock','correlation', 'cosine',\
+'euclidean', 'hamming', 'jaccard', 'mahalanobis', 'minkowski', 'seuclidean', 'sqeuclidean'], \
+help='If present FMC will perform a hierarchical clustering analysis of the focal\n\
+mechanisms distribution on the Kaverina diagram with the metric specified.\n\
+The algorithm uses the metrics available in the scipy.spatial.distance.pdist\n\
+function which are listed below. By default FMC uses euclidean. \n\n\
+The distance function can be braycurtis, canberra, chebyshev, cityblock, correlation,\n\
+cosine, euclidean, hamming, jaccard, mahalanobis, minkowski, seuclidean, sqeuclidean.\n\n\
+Please check the adequacy of your choice.\n\
+As a rule of thumb if the parameters used to perform the clustering are all in\n\
+the same units and equivalent magnitudes "euclidean" is a good choice.\n\
+If you are using parameters in different units and magnitudes "mahalanobis" should work.\n ')
 parser.add_argument('-cn',nargs='?', \
 help='If present FMC will perform a hierarchical clustering analysis\n\
 of the focal mechanisms distribution on the Kaverina diagram\n\
@@ -125,9 +139,9 @@ rakeA = Rake of nodal plane A \n\
 strB = Strike of nodal plane B \n\
 dipB = Dip of nodal plane B \n\
 rakeB = Rake of nodal plane B \n\
-slipA = Slip sense of plane A \n\
+slipA = Slip trend of plane A \n\
 plungA = Plunge of slip vector of plane A \n\
-slipB = Slip sense of plane B \n\
+slipB = Slip trend of plane B \n\
 plungB = Plunge of slip vector of plane B \n\
 trendp = Trend of P axis \n\
 plungp = Plunge of P axis \n\
@@ -154,7 +168,7 @@ elif not sys.stdin.isatty():
 	if args.v:
 		sys.stderr.write('Working on standard input.\n')
 
-	parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('infile', nargs='*', type=argparse.FileType('r'), default=sys.stdin)
 	args = parser.parse_args()
 	args.outfile = sys.stdout
 
@@ -162,26 +176,18 @@ else:
 	parser.print_help()
 	sys.exit(1)
 
-data = genfromtxt(args.infile,dtype=None)
+# check the python version to different genfromtext syntax
+
+if sys.version_info[0] == 2:
+	data = genfromtxt(args.infile, dtype=None)
+
+elif sys.version_info[0] == 3:
+	data = genfromtxt(args.infile, dtype=None, encoding='str')
+
 n_events = data.size
 if n_events == 1:
 	data=atleast_2d(data)[0]
 fields = shape(data.dtype.names)[0]
-
-# Output data array generation
-#if args.o[0] == 'CMT':
-#	outdata = zeros((n_events+1,14)).tolist()
-#elif args.o[0] == 'P':
-#	outdata = zeros((n_events+1,15)).tolist()
-#elif args.o[0] == 'AR':
-#	outdata = zeros((n_events+1,11)).tolist()
-#elif args.o[0] == 'K':
-#	outdata = zeros((n_events+1,6)).tolist()
-#elif args.o[0] == 'ALL':
-#	outdata = zeros((n_events+1,29)).tolist()
-#else:
-#	sys.stderr.write("ERROR - Incorrect class of output file")
-#	sys.exit(1)
 
 # Output data array generation
 lon_all=zeros((n_events,1))
@@ -248,7 +254,7 @@ for row in range(n_events):
 
 		# scalar moment and fclvd
 		Mo, fclvd, val, vect = moment(am)
-		Mw=((2.0/3.0)*log10(Mo))-10.7
+		Mw=((2.0/3.0)*log10(Mo))-10.733333
 		mant_exp = ("%e" % Mo).split('e')
 		mant=mant_exp[0]
 		expo=mant_exp[1].strip('+')
@@ -329,7 +335,7 @@ for row in range(n_events):
 		dipA=(data[row][4])
 		rakeA=(data[row][5])
 		Mw=(data[row][6])
-		Mo=10**(1.5*(Mw+10.7))
+		Mo=10**(1.5*(Mw+10.7333333))
 		mant_exp = ("%e" % Mo).split('e')
 		mant=mant_exp[0]
 		expo=mant_exp[1].strip('+')
@@ -410,40 +416,40 @@ for row in range(n_events):
 
 lonH=vstack(((['Longitude']),(array(lon_all, dtype=object))))
 latH=vstack(((['Latitude']),(array(lat_all, dtype=object))))
-depH=vstack(((['Depth (km)']),(array(dep_all, dtype=object))))
+depH=vstack(((['Depth_(km)']),(array(dep_all, dtype=object))))
 mrrH=vstack(((['mrr']),(array(mrr_all, dtype=object))))
 mttH=vstack(((['mtt']),(array(mtt_all, dtype=object))))
 mffH=vstack(((['mff']),(array(mff_all, dtype=object))))
 mrtH=vstack(((['mrt']),(array(mrt_all, dtype=object))))
 mrfH=vstack(((['mrf']),(array(mrf_all, dtype=object))))
 mtfH=vstack(((['mtf']),(array(mtf_all, dtype=object))))
-mantH=vstack(((['Seismic moment Mantissa']),(array(mant_all, dtype=object))))
-expoH=vstack(((['Exponent (dyn-cm)']),(array(expo_all, dtype=object))))
-MoH=vstack(((['Mo']),(array(Mo_all, dtype=object))))
-MwH=vstack(((['Mw']),(array(Mw_all, dtype=object))))
-strAH=vstack(((['Strike A']),(array(strA_all, dtype=object))))
-dipAH=vstack(((['Dip A']),(array(dipA_all, dtype=object))))
-rakeAH=vstack(((['Rake A']),(array(rakeA_all, dtype=object))))
-strBH=vstack(((['Strike B']),(array(strB_all, dtype=object))))
-dipBH=vstack(((['Dip B']),(array(dipB_all, dtype=object))))
-rakeBH=vstack(((['Rake B']),(array(rakeB_all, dtype=object))))
-slipAH=vstack(((['SlipSense A']),(array(slipA_all, dtype=object))))
-plungAH=vstack(((['Plunge A']),(array(plungA_all, dtype=object))))
-slipBH=vstack(((['SlipSense B']),(array(slipB_all, dtype=object))))
-plungBH=vstack(((['Plunge B']),(array(plungB_all, dtype=object))))
-trendpH=vstack(((['Trend P']),(array(trendp_all, dtype=object))))
-plungpH=vstack(((['Plunge P']),(array(plungp_all, dtype=object))))
-trendbH=vstack(((['Trend B']),(array(trendb_all, dtype=object))))
-plungbH=vstack(((['Plunge B']),(array(plungb_all, dtype=object))))
-trendtH=vstack(((['Trend T']),(array(trendt_all, dtype=object))))
-plungtH=vstack(((['Plunge T']),(array(plungt_all, dtype=object))))
+mantH=vstack(((['Seismic_moment_mantissa']),(array(mant_all, dtype=object))))
+expoH=vstack(((['Exponent_(dyn-cm)']),(array(expo_all, dtype=object))))
+MoH=vstack(((['Seismic_moment_Mo']),(array(Mo_all, dtype=object))))
+MwH=vstack(((['Magnitude_Mw']),(array(Mw_all, dtype=object))))
+strAH=vstack(((['Strike_A']),(array(strA_all, dtype=object))))
+dipAH=vstack(((['Dip_A']),(array(dipA_all, dtype=object))))
+rakeAH=vstack(((['Rake_A']),(array(rakeA_all, dtype=object))))
+strBH=vstack(((['Strike_B']),(array(strB_all, dtype=object))))
+dipBH=vstack(((['Dip_B']),(array(dipB_all, dtype=object))))
+rakeBH=vstack(((['Rake_B']),(array(rakeB_all, dtype=object))))
+slipAH=vstack(((['Slip_trend_A']),(array(slipA_all, dtype=object))))
+plungAH=vstack(((['Slip_plunge_A']),(array(plungA_all, dtype=object))))
+slipBH=vstack(((['Slip_trend_B']),(array(slipB_all, dtype=object))))
+plungBH=vstack(((['Slip_plunge_B']),(array(plungB_all, dtype=object))))
+trendpH=vstack(((['Trend_P']),(array(trendp_all, dtype=object))))
+plungpH=vstack(((['Plunge_P']),(array(plungp_all, dtype=object))))
+trendbH=vstack(((['Trend_B']),(array(trendb_all, dtype=object))))
+plungbH=vstack(((['Plunge_B']),(array(plungb_all, dtype=object))))
+trendtH=vstack(((['Trend_T']),(array(trendt_all, dtype=object))))
+plungtH=vstack(((['Plunge_T']),(array(plungt_all, dtype=object))))
 fclvdH=vstack(((['fclvd']),(array(fclvd_all, dtype=object))))
-x_kavH=vstack(((['X Kaverina']),(array(x_kav_all, dtype=object))))
-y_kavH=vstack(((['Y Kaverina']),(array(y_kav_all, dtype=object))))
+x_kavH=vstack(((['X_Kaverina']),(array(x_kav_all, dtype=object))))
+y_kavH=vstack(((['Y_Kaverina']),(array(y_kav_all, dtype=object))))
 IDH=vstack(((['ID']),(array(ID_all).reshape((n_events,1)))))
-clasH=vstack(((['Mechanism type']),(array(clas_all).reshape((n_events,1)))))
-posXH=vstack(((['X position(GMT)']),(array(posX_all).reshape((n_events,1)))))
-posYH=vstack(((['Y position(GMT)']),(array(posY_all).reshape((n_events,1)))))
+clasH=vstack(((['Rupture_type']),(array(clas_all).reshape((n_events,1)))))
+posXH=vstack(((['X_position(GMT)']),(array(posX_all).reshape((n_events,1)))))
+posYH=vstack(((['Y_position(GMT)']),(array(posY_all).reshape((n_events,1)))))
 
 dict_H={'lon':lonH,'lat':latH,'dep':depH,'mrr':mrrH,'mtt':mttH,'mff':mffH,'mrt':mrtH,'mrf':mrfH,'mtf':mtfH,'mant':mantH,'expo':expoH,'Mo':MoH,'Mw':MwH,'strA':strAH,'dipA':dipAH,'rakeA':rakeAH,'strB':strBH,'dipB':dipBH,'rakeB':rakeBH,'slipA':slipAH,'plungA':plungAH,'slipB':slipBH,'plungB':plungBH,'trendp':trendpH,'plungp':plungpH,'trendb':trendbH,'plungb':plungbH,'trendt':trendtH,'plungt':plungtH,'fclvd':fclvdH,'x_kav':x_kavH,'y_kav':y_kavH,'ID':IDH,'clas':clasH,'posX':posXH,'posY':posYH}
 dict_all={'lon':lon_all,'lat':lat_all,'dep':dep_all,'mrr':mrr_all,'mtt':mtt_all,'mff':mff_all,'mrt':mrt_all,'mrf':mrf_all,'mtf':mtf_all,'mant':mant_all,'expo':expo_all,'Mo':Mo_all,'Mw':Mw_all,'strA':strA_all,'dipA':dipA_all,'rakeA':rakeA_all,'strB':strB_all,'dipB':dipB_all,'rakeB':rakeB_all,'slipA':slipA_all,'plungA':plungA_all,'slipB':slipB_all,'plungB':plungB_all,'trendp':trendp_all,'plungp':plungp_all,'trendb':trendb_all,'plungb':plungb_all,'trendt':trendt_all,'plungt':plungt_all,'fclvd':fclvd_all,'x_kav':x_kav_all,'y_kav':y_kav_all,'ID':ID_all,'clas':clas_all,'posX':posX_all,'posY':posY_all}
@@ -467,7 +473,6 @@ elif args.o[0] == 'CUSTOM':
 	if "," in args.of:
 			labels = ('%s' % args.of).split(",")
 			nl = len(labels)-1
-#~			outdata=1
 			for l in labels:
 				if 'outdata' in locals():
  					outdata=c_[outdata,dict_H[l]]
@@ -479,13 +484,18 @@ elif args.o[0] == 'CUSTOM':
 if args.v != None:
 	sys.stderr.write('\n')
 
-if args.cn == None and args.cm == None:
+if args.cn == None and args.cm == None and args.ce == None:
 	pass
 else:
 	if args.cm == None:
 		method = 'centroid'
 	else:
 		method = args.cm
+
+	if args.ce == None:
+		metric = 'euclidean'
+	else:
+		metric = args.ce
 
 	if args.cn == None:
 		num_clust = 0
@@ -507,39 +517,37 @@ else:
 	else:
 		cl_input = c_[x_kav_all,y_kav_all]
 
-	clustID = HC(cl_input, method, num_clust)
+	clustID = HC(cl_input, method, metric, num_clust)
 	clustIDH=vstack(((['Cluster_ID']),(array(clustID).reshape((n_events,1)))))
 	outdata = c_[outdata,clustIDH]
 
-
-# diagram FMC plot
-# borders
-
-#~ for item in outdata:
-#~ print outdata
-#~ savetxt(args.outfile,outdata,delimiter=' ')
+#~ output
+outdata[0][0] = "#" + outdata[0][0]
 args.outfile.write('\n'.join(str(e).strip("[]").replace("'",'').replace('\n','') for e in outdata))
 print ("")
-#~ args.outfile.close()
+
+# diagram FMC plot
+
 if args.p:
 	if args.pc:
 		color = dict_all[args.pc]
-		label = str(dict_H[args.pc][0]).strip("[]").replace("'",'')
+		label = str(dict_H[args.pc][0]).strip("[]").replace("'",'').replace("_"," ")
 	else:
 		try:
 			clustID
 		except:
-			args.pc='dep'
-			color = dict_all[args.pc]
-			label = str(dict_H[args.pc][0]).strip("[]").replace("'",'')
+			color = 'white'
+			label = 'nada'
 		else:
 			color=clustID
 			label='Clust ID'
 
-	if args.a > 0:
-		fig=annot(x_kav_all,y_kav_all,Mw_all*10,color,args.p.split('.')[0],label,ID_all)
+	if args.a:
+		dotlabel = dict_all[args.a]
+		lab_param = dict_H[args.a][0]
+		fig=annot(x_kav_all,y_kav_all,Mw_all**2,color,args.p.split('.')[0],label,dotlabel,lab_param)
 	else:
-		fig=circles(x_kav_all,y_kav_all,Mw_all*10,color,args.p.split('.')[0],label)
+		fig=circles(x_kav_all,y_kav_all,Mw_all**2,color,args.p.split('.')[0],label)
 
 	plt.savefig(args.p,dpi=300)
 	plt.close()
