@@ -40,8 +40,8 @@ def baseplot(plotname):
 	plt.plot(X[0],Y[0],color='black',linewidth=2)
 	plt.scatter(tickx,ticky,marker=3,c='black',linewidth=2)
 	for i in range(0,10):
-		plt.text(tickx[0][i],ticky[0][i]-0.04,i*10,fontsize=9,verticalalignment='top')
-	plt.text(0,-0.75,'P axis plunge',fontsize=9,horizontalalignment='center')
+		plt.text(tickx[0][i],ticky[0][i]-0.04,i*10,fontsize=8,verticalalignment='top')
+	plt.text(0,-0.76,'P axis plunge',fontsize=9,horizontalalignment='center')
 		
 	X=zeros((1,101))
 	Y=zeros((1,101))
@@ -55,8 +55,8 @@ def baseplot(plotname):
 	plt.plot(X[0],Y[0],color='black',linewidth=2)
 	plt.scatter(tickx,ticky,marker=0,c='black',linewidth=2)
 	for i in range(0,10):
-		plt.text(tickx[0][i]-0.04,ticky[0][i],i*10,fontsize=9,horizontalalignment='right')
-	plt.text(-0.65,0.5,'B axis plunge',fontsize=9,horizontalalignment='center',rotation=60)
+		plt.text(tickx[0][i]-0.04,ticky[0][i],i*10,fontsize=8,horizontalalignment='right')
+	plt.text(-0.7,0.5,'B axis plunge',fontsize=9,horizontalalignment='center',rotation=60)
 
 	X=zeros((1,101))
 	Y=zeros((1,101))
@@ -70,8 +70,8 @@ def baseplot(plotname):
 	plt.plot(X[0],Y[0],color='black',linewidth=2)
 	plt.scatter(tickx+0.025,ticky,marker=0,c='black',linewidth=2)
 	for i in range(0,10):
-		plt.text(tickx[0][i]+0.04,ticky[0][i],i*10,fontsize=9,horizontalalignment='left')
-	plt.text(0.65,0.5,'T axis plunge',fontsize=9,horizontalalignment='center',rotation=-60)
+		plt.text(tickx[0][i]+0.04,ticky[0][i],i*10,fontsize=8,horizontalalignment='left')
+	plt.text(0.7,0.5,'T axis plunge',fontsize=9,horizontalalignment='center',rotation=-60)
 
 	
 	X=zeros((1,101))
