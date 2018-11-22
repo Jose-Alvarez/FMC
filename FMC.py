@@ -229,6 +229,9 @@ posX_all=[None] * n_events
 posY_all=[None] * n_events
 clustID_all=[None] * n_events
 
+# false clustID to initialize the variable
+clustID=0
+
 for row in range(n_events):
 	if args.i[0] == 'CMT':
 		if fields != 13:
@@ -244,8 +247,7 @@ for row in range(n_events):
 		posX=data[row][10]
 		posY=data[row][11]
 		ID=data[row][12]
-		# false clustID to initialize the variable
-		clustID=0
+
 		# tensor matrix building
 		expo=(data[row][9]*1.0)
 		mrr=data[row][3]*10**expo
@@ -462,8 +464,8 @@ dict_all={'lon':lon_all,'lat':lat_all,'dep':dep_all,'mrr':mrr_all,'mtt':mtt_all,
 if args.v != None:
 	sys.stderr.write('\n')
 
-if args.cn == None and args.cm == None and args.ce == None:
-	pass
+if args.cn == None and args.cm == None and args.ce == None and args.ci == None:
+	clustering='FALSE'
 else:
 	if args.cm == None:
 		method = 'centroid'
