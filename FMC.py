@@ -156,6 +156,7 @@ ID = ID of the event \n\
 clas = focal mechanism rupture type \n\
 posX = X plotting position for GMT psmeca \n\
 posY = Y plotting position for GMT psmeca \n\
+clustID = ID number of cluster \n\
 \n")
 	sys.exit(1)
 
@@ -226,6 +227,7 @@ ID_all=[None] * n_events
 clas_all=[None] * n_events
 posX_all=[None] * n_events
 posY_all=[None] * n_events
+clustID_all=[None] * n_events
 
 for row in range(n_events):
 	if args.i[0] == 'CMT':
@@ -242,6 +244,8 @@ for row in range(n_events):
 		posX=data[row][10]
 		posY=data[row][11]
 		ID=data[row][12]
+		# false clustID to initialize the variable
+		clustID=0
 		# tensor matrix building
 		expo=(data[row][9]*1.0)
 		mrr=data[row][3]*10**expo
@@ -411,6 +415,7 @@ for row in range(n_events):
 	clas_all[row]=clas
 	posX_all[row]=posX
 	posY_all[row]=posY
+	clustID_all[row]=clustID
 
 	r=row+1
 
@@ -450,36 +455,7 @@ IDH=vstack(((['ID']),(array(ID_all).reshape((n_events,1)))))
 clasH=vstack(((['Rupture_type']),(array(clas_all).reshape((n_events,1)))))
 posXH=vstack(((['X_position(GMT)']),(array(posX_all).reshape((n_events,1)))))
 posYH=vstack(((['Y_position(GMT)']),(array(posY_all).reshape((n_events,1)))))
-
-dict_H={'lon':lonH,'lat':latH,'dep':depH,'mrr':mrrH,'mtt':mttH,'mff':mffH,'mrt':mrtH,'mrf':mrfH,'mtf':mtfH,'mant':mantH,'expo':expoH,'Mo':MoH,'Mw':MwH,'strA':strAH,'dipA':dipAH,'rakeA':rakeAH,'strB':strBH,'dipB':dipBH,'rakeB':rakeBH,'slipA':slipAH,'plungA':plungAH,'slipB':slipBH,'plungB':plungBH,'trendp':trendpH,'plungp':plungpH,'trendb':trendbH,'plungb':plungbH,'trendt':trendtH,'plungt':plungtH,'fclvd':fclvdH,'x_kav':x_kavH,'y_kav':y_kavH,'ID':IDH,'clas':clasH,'posX':posXH,'posY':posYH}
-dict_all={'lon':lon_all,'lat':lat_all,'dep':dep_all,'mrr':mrr_all,'mtt':mtt_all,'mff':mff_all,'mrt':mrt_all,'mrf':mrf_all,'mtf':mtf_all,'mant':mant_all,'expo':expo_all,'Mo':Mo_all,'Mw':Mw_all,'strA':strA_all,'dipA':dipA_all,'rakeA':rakeA_all,'strB':strB_all,'dipB':dipB_all,'rakeB':rakeB_all,'slipA':slipA_all,'plungA':plungA_all,'slipB':slipB_all,'plungB':plungB_all,'trendp':trendp_all,'plungp':plungp_all,'trendb':trendb_all,'plungb':plungb_all,'trendt':trendt_all,'plungt':plungt_all,'fclvd':fclvd_all,'x_kav':x_kav_all,'y_kav':y_kav_all,'ID':ID_all,'clas':clas_all,'posX':posX_all,'posY':posY_all}
-
-if args.o[0] == 'CMT':
-	outdata = c_[lonH, latH, depH, mrrH, mttH, mffH, mrtH, mrfH, mtfH, expoH, posXH, posYH, IDH, clasH]
-
-elif args.o[0] == 'P':
-	outdata = c_[lonH, latH, depH, strAH, dipAH, rakeAH, strBH, dipBH, rakeBH, mantH, expoH, posXH, posYH, IDH, clasH]
-
-elif args.o[0] == 'AR':
-	outdata = c_[lonH, latH, depH, strAH, dipAH, rakeAH, MwH, posXH, posYH, IDH, clasH]
-
-elif args.o[0] == 'K':
-	outdata = c_[x_kavH, y_kavH, MwH, depH, IDH, clasH]
-
-elif args.o[0] == 'ALL':
-	 outdata = c_[lonH, latH, depH, mrrH, mttH, mffH, mrtH, mrfH, mtfH, expoH, MoH, MwH, strAH, dipAH, rakeAH, strBH, dipBH, rakeBH, slipAH, plungAH, slipBH, plungBH, trendpH, plungpH, trendbH, plungbH, trendtH, plungtH, fclvdH, x_kavH, y_kavH, IDH, clasH]
-
-elif args.o[0] == 'CUSTOM':
-	if "," in args.of:
-			labels = ('%s' % args.of).split(",")
-			nl = len(labels)-1
-			for l in labels:
-				if 'outdata' in locals():
- 					outdata=c_[outdata,dict_H[l]]
-				else:
-					outdata=dict_H[l]
-	else:
-			outdata = dict_H[args.of]
+clustIDH=vstack(((['clustID']),(array(clustID_all).reshape((n_events,1)))))
 
 if args.v != None:
 	sys.stderr.write('\n')
@@ -519,9 +495,38 @@ else:
 
 	clustID = HC(cl_input, method, metric, num_clust)
 	clustIDH=vstack(((['Cluster_ID']),(array(clustID).reshape((n_events,1)))))
-	outdata = c_[outdata,clustIDH]
+
+dict_H={'lon':lonH,'lat':latH,'dep':depH,'mrr':mrrH,'mtt':mttH,'mff':mffH,'mrt':mrtH,'mrf':mrfH,'mtf':mtfH,'mant':mantH,'expo':expoH,'Mo':MoH,'Mw':MwH,'strA':strAH,'dipA':dipAH,'rakeA':rakeAH,'strB':strBH,'dipB':dipBH,'rakeB':rakeBH,'slipA':slipAH,'plungA':plungAH,'slipB':slipBH,'plungB':plungBH,'trendp':trendpH,'plungp':plungpH,'trendb':trendbH,'plungb':plungbH,'trendt':trendtH,'plungt':plungtH,'fclvd':fclvdH,'x_kav':x_kavH,'y_kav':y_kavH,'ID':IDH,'clas':clasH,'posX':posXH,'posY':posYH,'clustID':clustIDH}
+dict_all={'lon':lon_all,'lat':lat_all,'dep':dep_all,'mrr':mrr_all,'mtt':mtt_all,'mff':mff_all,'mrt':mrt_all,'mrf':mrf_all,'mtf':mtf_all,'mant':mant_all,'expo':expo_all,'Mo':Mo_all,'Mw':Mw_all,'strA':strA_all,'dipA':dipA_all,'rakeA':rakeA_all,'strB':strB_all,'dipB':dipB_all,'rakeB':rakeB_all,'slipA':slipA_all,'plungA':plungA_all,'slipB':slipB_all,'plungB':plungB_all,'trendp':trendp_all,'plungp':plungp_all,'trendb':trendb_all,'plungb':plungb_all,'trendt':trendt_all,'plungt':plungt_all,'fclvd':fclvd_all,'x_kav':x_kav_all,'y_kav':y_kav_all,'ID':ID_all,'clas':clas_all,'posX':posX_all,'posY':posY_all,'clustID':clustID_all}
 
 #~ output
+if args.o[0] == 'CMT':
+	outdata = c_[lonH, latH, depH, mrrH, mttH, mffH, mrtH, mrfH, mtfH, expoH, posXH, posYH, IDH, clasH]
+
+elif args.o[0] == 'P':
+	outdata = c_[lonH, latH, depH, strAH, dipAH, rakeAH, strBH, dipBH, rakeBH, mantH, expoH, posXH, posYH, IDH, clasH]
+
+elif args.o[0] == 'AR':
+	outdata = c_[lonH, latH, depH, strAH, dipAH, rakeAH, MwH, posXH, posYH, IDH, clasH]
+
+elif args.o[0] == 'K':
+	outdata = c_[x_kavH, y_kavH, MwH, depH, IDH, clasH]
+
+elif args.o[0] == 'ALL':
+	 outdata = c_[lonH, latH, depH, mrrH, mttH, mffH, mrtH, mrfH, mtfH, expoH, MoH, MwH, strAH, dipAH, rakeAH, strBH, dipBH, rakeBH, slipAH, plungAH, slipBH, plungBH, trendpH, plungpH, trendbH, plungbH, trendtH, plungtH, fclvdH, x_kavH, y_kavH, IDH, clasH]
+
+elif args.o[0] == 'CUSTOM':
+	if "," in args.of:
+			labels = ('%s' % args.of).split(",")
+			nl = len(labels)-1
+			for l in labels:
+				if 'outdata' in locals():
+ 					outdata=c_[outdata,dict_H[l]]
+				else:
+					outdata=dict_H[l]
+	else:
+			outdata = dict_H[args.of]
+
 outdata[0][0] = "#" + outdata[0][0]
 args.outfile.write('\n'.join(str(e).strip("[]").replace("'",'').replace('\n','') for e in outdata))
 print ("")
