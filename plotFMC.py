@@ -22,9 +22,6 @@ from functionsFMC import kave
 
 plt.rc('pdf', fonttype=3)
 
-# Modified to show also the P axis labels (05/10/2017)
-
-
 def baseplot(spacing, plotname):
     # border
     fig = plt.figure()
@@ -175,7 +172,7 @@ def circles(X, Y, size, color, plotname, label, spacing):
 
     fig = baseplot(spacing, plotname)
     if str(color) == 'white':
-        sc = plt.scatter(X, Y, s=size, c=color, alpha=0.7, linewidth=1.5)
+        sc = plt.scatter(X, Y, s=size, c=color, alpha=0.7, linewidth=1.5, edgecolors='black')
     else:
         sc = plt.scatter(
             X,
@@ -184,16 +181,17 @@ def circles(X, Y, size, color, plotname, label, spacing):
             c=color,
             alpha=0.7,
             linewidth=1.5,
+			edgecolors='black',
             cmap='plasma_r')
         cbar = plt.colorbar(sc, shrink=0.5)
         cbar.set_label(label)
     # legend
-    plt.scatter(0.3, 0.9, s=16, c='white', linewidth=1.5)
-    plt.scatter(0.4, 0.9, s=25, c='white', linewidth=1.5)
-    plt.scatter(0.5, 0.9, s=36, c='white', linewidth=1.5)
-    plt.scatter(0.6, 0.9, s=49, c='white', linewidth=1.5)
-    plt.scatter(0.7, 0.9, s=64, c='white', linewidth=1.5)
-    plt.scatter(0.8, 0.9, s=81, c='white', linewidth=1.5)
+    plt.scatter(0.3, 0.9, s=16, c='white', linewidth=1.5, edgecolors='black')
+    plt.scatter(0.4, 0.9, s=25, c='white', linewidth=1.5, edgecolors='black')
+    plt.scatter(0.5, 0.9, s=36, c='white', linewidth=1.5, edgecolors='black')
+    plt.scatter(0.6, 0.9, s=49, c='white', linewidth=1.5, edgecolors='black')
+    plt.scatter(0.7, 0.9, s=64, c='white', linewidth=1.5, edgecolors='black')
+    plt.scatter(0.8, 0.9, s=81, c='white', linewidth=1.5, edgecolors='black')
     plt.text(0.3, .95, '4', fontsize=10)
     plt.text(0.4, .95, '5', fontsize=10)
     plt.text(0.5, .95, '6', fontsize=10)
