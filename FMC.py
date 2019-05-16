@@ -200,7 +200,7 @@ if sys.version_info[0] == 2:
     data = genfromtxt(args.infile, dtype=None)
 
 elif sys.version_info[0] == 3:
-    data = genfromtxt(args.infile, dtype=None, encoding='str')
+    data = genfromtxt(args.infile, dtype=None, encoding=None)
 
 n_events = data.size
 if n_events == 1:
