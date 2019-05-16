@@ -17,19 +17,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Version 1.1 beta
+# Version 1.1
 #	Including:
 #	new output parsing
 #	symbol coloring
 #	Hierarchical clustering with several methods
 #
-# Version 1.2 beta
+# Version 1.2
 #	Including:
 #	Slip sense and inmersion optional output
 #
-# Version 1.3 beta
+# Version 1.3
 #	Including:
 #	Adapted to python 3
+#   new plot options: labels, colors, grid
+#
+# Version 1.4
+#   Including:
+#   Bug correction
+#   custom title
 #
 
 import sys
@@ -79,6 +85,10 @@ Type "FMC.py -helpFields" to obtain information on the data fields that can be u
 parser.add_argument('-pg', nargs='?',
                     help='If present the program will plot gridlines with the specified angular spacing on the diagram plot. [10 by default]\n\
 Type "FMC.py -helpFields" to obtain information on the data fields that can be used. \n ')
+parser.add_argument('-pt', nargs='?',
+                    help='If present the program will plot a title with the specified text on the diagram plot.\n\
+If no text is given, or "-pt" is not set, then the output plot file name (without extension) is used by default.\n\
+To omit the title just use the space character as text string -pt " ".\n')
 parser.add_argument(
     '-cm', nargs='?', choices=['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward'],
     help='If present FMC will perform a hierarchical clustering analysis\n\
@@ -810,6 +820,11 @@ if args.p:
     else:
         gridspacing = 0
 
+    if args.pt:
+        plotname = args.pt
+    else:
+        plotname = args.p.split('.')[0]
+
     if args.pa:
         dotlabel = dict_all[args.pa]
         lab_param = dict_H[args.pa][0]
@@ -818,7 +833,7 @@ if args.p:
             y_kav_all,
             Mw_all**2,
             color,
-            args.p.split('.')[0],
+            plotname,
             label,
             dotlabel,
             lab_param,
@@ -829,7 +844,7 @@ if args.p:
             y_kav_all,
             Mw_all**2,
             color,
-            args.p.split('.')[0],
+            plotname,
             label,
             gridspacing)
 
