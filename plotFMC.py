@@ -72,7 +72,7 @@ def baseplot(spacing, plotname):
             horizontalalignment='right')
     plt.text(
         -0.7,
-        0.5,
+        0.2,
      'B axis plunge',
      fontsize=9,
      horizontalalignment='center',
@@ -98,7 +98,7 @@ def baseplot(spacing, plotname):
             horizontalalignment='left')
     plt.text(
         0.7,
-        0.5,
+        0.2,
      'T axis plunge',
      fontsize=9,
      horizontalalignment='center',
@@ -178,7 +178,7 @@ def circles(X, Y, size, color, plotname, label, spacing):
             X,
             Y,
             s=size,
-            c=color,
+            c=color, # AQUI HAY UN PROBLEMA AL UTILIZAR NUMEROS EN ID PARA COLOREAR PROBLEMA EN LA FUNCION COLOR DE matplotlib 3
             alpha=0.7,
             linewidth=1.5,
 			edgecolors='black',

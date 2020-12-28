@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # FMC, Focal Mechanisms Classification
 # Copyright (C) 2015  Jose A. Alvarez-Gomez
@@ -36,8 +36,18 @@
 #   Including:
 #   Bug correction
 #   custom title
+#   Isotropic component output
 #
-
+# Version 1.5
+# Including:
+#   Bug correction
+#   Warning for symbol filling
+#
+# Version 1.51
+# Including:
+#   Correction on genfromtext
+#   Adjustment of T and B axes labels
+#
 import sys
 import argparse
 from argparse import RawTextHelpFormatter, ArgumentParser
@@ -88,7 +98,7 @@ Type "FMC.py -helpFields" to obtain information on the data fields that can be u
 parser.add_argument('-pt', nargs='?',
                     help='If present the program will plot a title with the specified text on the diagram plot.\n\
 If no text is given, or "-pt" is not set, then the output plot file name (without extension) is used by default.\n\
-To omit the title just use the space character as text string -pt " ".\n')
+To omit the title just use the space character as text string -pt " ".\n ')
 parser.add_argument(
     '-cm', nargs='?', choices=['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward'],
     help='If present FMC will perform a hierarchical clustering analysis\n\
@@ -804,9 +814,14 @@ print ("")
 
 if args.p:
     if args.pc:
-        color = dict_all[args.pc]
-        label = str(dict_H[args.pc][0]).strip(
-            "[]").replace("'", '').replace("_", " ")
+        if args.pc == 'ID' or args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
+            sys.stderr.write('\nWarning, to fill the symbols a numeric value is needed.\n')
+            color = 'white'
+            label = 'nada'
+        else:
+            color = dict_all[args.pc]
+            label = str(dict_H[args.pc][0]).strip(
+                "[]").replace("'", '').replace("_", " ")
     else:
         if clustering == 'TRUE':
             color = clustID
@@ -824,6 +839,15 @@ if args.p:
         plotname = args.pt
     else:
         plotname = args.p.split('.')[0]
+
+# working on it
+# computes min and max Mw to provide adecuate symbol scaling
+    minMw = min(Mw_all)
+    maxMw = max(Mw_all)
+    maxscale=100/maxMw
+    minscale=20/minMw
+    scale=(maxscale+minscale)/2
+# ----------------------------------
 
     if args.pa:
         dotlabel = dict_all[args.pa]
