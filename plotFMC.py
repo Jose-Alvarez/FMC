@@ -15,6 +15,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# version 1.6
+# Diamond source-type diagram included
+# Some plot adjustments were done
 
 import matplotlib.pyplot as plt
 from numpy import zeros, sqrt, arcsin, pi, sin
@@ -172,7 +176,7 @@ def circles(X, Y, size, color, plotname, label, spacing):
 
     fig = baseplot(spacing, plotname)
     if str(color) == 'white':
-        sc = plt.scatter(X, Y, s=size, c=color, alpha=0.7, linewidth=1.5, edgecolors='black')
+        sc = plt.scatter(X, Y, s=size, c=color, alpha=0.7, linewidth=0.5, edgecolors='black')
     else:
         sc = plt.scatter(
             X,
@@ -180,18 +184,18 @@ def circles(X, Y, size, color, plotname, label, spacing):
             s=size,
             c=color, # AQUI HAY UN PROBLEMA AL UTILIZAR NUMEROS EN ID PARA COLOREAR PROBLEMA EN LA FUNCION COLOR DE matplotlib 3
             alpha=0.7,
-            linewidth=1.5,
-			edgecolors='black',
+            linewidth=0.5,
+            edgecolors='black',
             cmap='plasma_r')
         cbar = plt.colorbar(sc, shrink=0.5)
         cbar.set_label(label)
     # legend
-    plt.scatter(0.3, 0.9, s=16, c='white', linewidth=1.5, edgecolors='black')
-    plt.scatter(0.4, 0.9, s=25, c='white', linewidth=1.5, edgecolors='black')
-    plt.scatter(0.5, 0.9, s=36, c='white', linewidth=1.5, edgecolors='black')
-    plt.scatter(0.6, 0.9, s=49, c='white', linewidth=1.5, edgecolors='black')
-    plt.scatter(0.7, 0.9, s=64, c='white', linewidth=1.5, edgecolors='black')
-    plt.scatter(0.8, 0.9, s=81, c='white', linewidth=1.5, edgecolors='black')
+    plt.scatter(0.3, 0.9, s=16, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(0.4, 0.9, s=25, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(0.5, 0.9, s=36, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(0.6, 0.9, s=49, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(0.7, 0.9, s=64, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(0.8, 0.9, s=81, c='white', linewidth=0.5, edgecolors='black')
     plt.text(0.3, .95, '4', fontsize=10)
     plt.text(0.4, .95, '5', fontsize=10)
     plt.text(0.5, .95, '6', fontsize=10)
@@ -214,17 +218,17 @@ def annot(X, Y, size, color, plotname, label, annots, lab_param, spacing):
             verticalalignment='bottom',
             rotation=30,
             size='x-small')
-        plt.text(
-            1.4,
-            -0.75,
-            'Text label:\n' + str(
-                lab_param).strip(
-                    "'[]'").replace(
-                "_",
-                 " "),
-                 fontsize=10,
-                 horizontalalignment='right',
-                 verticalalignment='top')
+    plt.text(
+        1.05,
+        -0.75,
+        'Text label:\n' + str(
+            lab_param).strip(
+             "'[]'").replace(
+             "_",
+             " "),
+             fontsize=10,
+             horizontalalignment='center',
+             verticalalignment='top')
 
     return fig
 
@@ -261,3 +265,83 @@ def grids(spacing, plotname):
             P = arcsin(sqrt((1 - (a / 50.0)) * compl)) / (pi / 180)
             X[0][a], Y[0][a] = kave(T, B, P)
         plt.plot(X[0], Y[0], color='gray', linewidth=0.5, linestyle='--')
+
+# Source type diagram, diamond skeewed from Hudson et al. (1989)
+def diamond_base(plotname):
+    fig = plt.figure()
+    plt.axes().set_aspect('equal')
+
+    plt.plot([0,1.3333,0,-1.3333,0],[1,0.3333,-1,-0.3333,1],linewidth=2,color='black') # diagram limits
+    plt.plot([-1,1],[0,0],linewidth=1,color='black') # horizontal line
+    plt.plot([0,0],[-1,1],linewidth=1,color='black') # vertical line
+    plt.plot([-1.3333,1.3333],[-0.3333,0.3333],linewidth=1,color='black',linestyle='--') # diagonal line
+
+    plt.text(0, -1.4, plotname, horizontalalignment='center', fontsize=16) # figure title
+    # Labels
+    plt.text(0,-1.1,'Implosion', horizontalalignment='center', fontsize=10)
+    plt.text(0,1.05,'Explosion', horizontalalignment='center', fontsize=10)
+    plt.text(1.05,0,'CLVD (-)', horizontalalignment='left', verticalalignment='center', fontsize=10)
+    plt.text(-1.05,0,'CLVD', horizontalalignment='right', verticalalignment='center', fontsize=10)
+
+    plt.axis('off')
+
+    return fig
+
+def diamond_circles(u, v, size, color, plotname, label):
+
+    fig = diamond_base(plotname)
+    if str(color) == 'white':
+        sc = plt.scatter(u, v, s=size, c=color, alpha=0.7, linewidth=0.5, edgecolors='black')
+    else:
+        sc = plt.scatter(
+            u,
+            v,
+            s=size,
+            c=color, # AQUI HAY UN PROBLEMA AL UTILIZAR NUMEROS EN ID PARA COLOREAR PROBLEMA EN LA FUNCION COLOR DE matplotlib 3
+            alpha=0.7,
+            linewidth=0.5,
+            edgecolors='black',
+            cmap='plasma_r')
+        cbar = plt.colorbar(sc, shrink=0.5)
+        cbar.set_label(label)
+    # legend
+    plt.scatter(0.4, 0.9, s=16, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(0.55, 0.9, s=25, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(0.7, 0.9, s=36, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(0.85, 0.9, s=49, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(1, 0.9, s=64, c='white', linewidth=0.5, edgecolors='black')
+    plt.scatter(1.15, 0.9, s=81, c='white', linewidth=0.5, edgecolors='black')
+    plt.text(0.4, 0.98, '4', fontsize=10)
+    plt.text(0.55, 0.98, '5', fontsize=10)
+    plt.text(0.7, 0.98, '6', fontsize=10)
+    plt.text(0.85, 0.98, '7', fontsize=10)
+    plt.text(1.0, 0.98, '8', fontsize=10)
+    plt.text(1.15, 0.98, '9', fontsize=10)
+    plt.text(1.22, 0.98, 'Mw', fontsize=10)
+    return fig
+
+def diamond_annot(X, Y, size, color, plotname, label, annots, lab_param):
+
+        fig = diamond_circles(X, Y, size, color, plotname, label)
+        for i, txt in enumerate(annots):
+            plt.annotate(
+                str(txt).strip(".'[]'"),
+                (X[i] + 0.01,
+                 Y[i] + 0.01),
+                horizontalalignment='left',
+                verticalalignment='bottom',
+                rotation=30,
+                size='x-small')
+        plt.text(
+            1.7,
+            -1.25,
+            'Text label:\n' + str(
+                lab_param).strip(
+                "'[]'").replace(
+                "_",
+                " "),
+                fontsize=10,
+                horizontalalignment='center',
+                verticalalignment='top')
+
+        return fig
