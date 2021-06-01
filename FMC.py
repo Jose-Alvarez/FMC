@@ -18,18 +18,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Version 1.1
-#	Including:
-#	new output parsing
-#	symbol coloring
-#	Hierarchical clustering with several methods
+#    Including:
+#    new output parsing
+#    symbol coloring
+#    Hierarchical clustering with several methods
 #
 # Version 1.2
-#	Including:
-#	Slip sense and inmersion optional output
+#    Including:
+#    Slip sense and inmersion optional output
 #
 # Version 1.3
-#	Including:
-#	Adapted to python 3
+#    Including:
+#    Adapted to python 3
 #   new plot options: labels, colors, grid
 #
 # Version 1.4
@@ -48,6 +48,11 @@
 #   Correction on genfromtext
 #   Adjustment of T and B axes labels
 #
+# Version 1.6
+# Including:
+#   Hudson et al. (1989) source-type diagram with plotting options -pd
+
+
 import sys
 import argparse
 from argparse import RawTextHelpFormatter, ArgumentParser
@@ -81,7 +86,10 @@ that can be used and parsed as comma separated names.\n\
 parser.add_argument('-of', nargs='?',
                     help='If present together with -o \'CUSTOM\' FMC will use the fields given as output.\n ')
 parser.add_argument('-p', metavar='[PlotFileName.pdf]', nargs='?',
-                    help='If present FMC will generate a plot with the classification diagram\n\
+                    help='If present FMC will generate a plot with the DC classification diagram\n\
+with the file format specified in the plot file name.\n ')
+parser.add_argument('-pd', metavar='[PlotFileName.pdf]', nargs='?',
+                    help='If present FMC will generate a plot with the source type classification diagram\n\
 with the file format specified in the plot file name.\n ')
 parser.add_argument('-pc', nargs='?',
                     help='If present FMC will use the specified parameter to fill the plotted\n\
@@ -179,6 +187,8 @@ trendt = Trend of T axis \n\
 plungt = Plunge of T axis \n\
 fclvd = Compensated linear vector dipole ratio \n\
 iso = Isotropic component of the Moment Tensor \n\
+u_Hudson = u position on the Hudson diagram \n\
+v_Hudson = v position on the Hudson diagram \n\
 x_kav = x position on the Kaverina diagram \n\
 y_kav = y position on the Kaverina diagram \n\
 ID = ID of the event \n\
@@ -259,9 +269,12 @@ trendt_all = zeros((n_events, 1))
 plungt_all = zeros((n_events, 1))
 fclvd_all = zeros((n_events, 1))
 iso_all = zeros((n_events, 1))
+u_Hudson_all = zeros((n_events, 1))
+v_Hudson_all = zeros((n_events, 1))
 x_kav_all = zeros((n_events, 1))
 y_kav_all = zeros((n_events, 1))
 ID_all = [None] * n_events
+#ID_all = zeros((n_events, 1),dtype="int8")
 clas_all = [None] * n_events
 posX_all = [None] * n_events
 posY_all = [None] * n_events
@@ -302,7 +315,7 @@ for row in range(n_events):
         am = asarray(([mtt, -mtf, mrt], [-mtf, mff, -mrf], [mrt, -mrf, mrr]))
 
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson = moment(am)
         Mw = ((2.0 / 3.0) * log10(Mo)) - 10.733333
         mant_exp = ("%e" % Mo).split('e')
         mant = mant_exp[0]
@@ -416,7 +429,7 @@ for row in range(n_events):
         mtf = am[0][1]
 
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson = moment(am)
 
         # x, y Kaverina diagram
         x_kav, y_kav = kave(plungt, plungb, plungp)
@@ -477,7 +490,7 @@ for row in range(n_events):
         mtf = am[0][1]
 
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson = moment(am)
 
         # x, y Kaverina diagram
         x_kav, y_kav = kave(plungt, plungb, plungp)
@@ -521,9 +534,12 @@ for row in range(n_events):
     plungt_all[row] = "%g" % (plungt)
     fclvd_all[row] = "%g" % (fclvd)
     iso_all[row] = "%g" % (iso)
+    u_Hudson_all[row] = "%g" % (u_Hudson)
+    v_Hudson_all[row] = "%g" % (v_Hudson)
     x_kav_all[row] = "%g" % (x_kav)
     y_kav_all[row] = "%g" % (y_kav)
     ID_all[row] = ID
+#    ID_all[row] = "%g" % (ID)
     clas_all[row] = clas
     posX_all[row] = posX
     posY_all[row] = posY
@@ -563,6 +579,8 @@ trendtH = vstack(((['Trend_T']), (array(trendt_all, dtype=object))))
 plungtH = vstack(((['Plunge_T']), (array(plungt_all, dtype=object))))
 fclvdH = vstack(((['fclvd']), (array(fclvd_all, dtype=object))))
 isoH = vstack(((['Isotropic']), (array(iso_all, dtype=object))))
+u_HudsonH = vstack(((['u_Hudson']), (array(u_Hudson_all, dtype=object))))
+v_HudsonH = vstack(((['v_Hudson']), (array(v_Hudson_all, dtype=object))))
 x_kavH = vstack(((['X_Kaverina']), (array(x_kav_all, dtype=object))))
 y_kavH = vstack(((['Y_Kaverina']), (array(y_kav_all, dtype=object))))
 IDH = vstack(((['ID']), (array(ID_all).reshape((n_events, 1)))))
@@ -605,6 +623,8 @@ dict_all = {
      'plungt': plungt_all,
      'fclvd': fclvd_all,
      'iso': iso_all,
+     'u_Hudson': u_Hudson_all,
+     'v_Hudson': v_Hudson_all,
      'x_kav': x_kav_all,
      'y_kav': y_kav_all,
      'ID': ID_all,
@@ -649,8 +669,9 @@ else:
         cl_input = c_[x_kav_all, y_kav_all]
 
     clustID = HC(cl_input, method, metric, num_clust)
+    clustID = (array(clustID).reshape((n_events, 1)))
     clustIDH = vstack(
-        ((['Cluster_ID']), (array(clustID).reshape((n_events, 1)))))
+        ((['Cluster_ID']), (clustID)))
     clustering = 'TRUE'
 
 dict_H = {
@@ -685,6 +706,8 @@ dict_H = {
      'plungt': plungtH,
      'fclvd': fclvdH,
      'iso': isoH,
+     'u_Hudson': u_HudsonH,
+     'v_Hudson': v_HudsonH,
      'x_kav': x_kavH,
      'y_kav': y_kavH,
      'ID': IDH,
@@ -786,6 +809,8 @@ elif args.o[0] == 'ALL':
      plungtH,
      fclvdH,
      isoH,
+     u_HudsonH,
+     v_HudsonH,
      x_kavH,
      y_kavH,
      IDH,
@@ -814,7 +839,8 @@ print ("")
 
 if args.p:
     if args.pc:
-        if args.pc == 'ID' or args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
+#        if args.pc == 'ID' or args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
+        if args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
             sys.stderr.write('\nWarning, to fill the symbols a numeric value is needed.\n')
             color = 'white'
             label = 'nada'
@@ -825,6 +851,7 @@ if args.p:
     else:
         if clustering == 'TRUE':
             color = clustID
+#            color = (dict_all['clustID']) # tratando de solventar el problema de colorear con los ID de cluster en python3
             label = 'Clust ID'
         else:
             color = 'white'
@@ -873,4 +900,53 @@ if args.p:
             gridspacing)
 
     plt.savefig(args.p, dpi=300)
+    plt.close()
+
+# source type diagram plot
+if args.pd:
+    if args.pc:
+#        if args.pc == 'ID' or args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
+        if args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
+            sys.stderr.write('\nWarning, to fill the symbols a numeric value is needed.\n')
+            color = 'white'
+            label = 'nada'
+        else:
+            color = dict_all[args.pc]
+            label = str(dict_H[args.pc][0]).strip(
+                "[]").replace("'", '').replace("_", " ")
+    else:
+        if clustering == 'TRUE':
+            color = clustID
+            label = 'Clust ID'
+        else:
+            color = 'white'
+            label = 'nada'
+    if args.pt:
+        plotname = args.pt
+    else:
+        plotname = args.pd.split('.')[0]
+    if args.pa:
+        dotlabel = dict_all[args.pa]
+        lab_param = dict_H[args.pa][0]
+        fig = diamond_annot(
+            u_Hudson_all,
+            v_Hudson_all,
+            Mw_all**2,
+            color,
+            plotname,
+            label,
+            dotlabel,
+            lab_param)
+#            gridspacing)
+    else:
+        fig = diamond_circles(
+            u_Hudson_all,
+            v_Hudson_all,
+            Mw_all**2,
+            color,
+            plotname,
+            label)
+#            gridspacing)
+
+    plt.savefig(args.pd, dpi=300)
     plt.close()
