@@ -27,8 +27,10 @@
 # 	Including Hierarchical clustering
 # Development version 1.2
 #	Including slip sense and inmersion
-#
-from numpy import diff, zeros, asarray, sin, cos, sqrt, dot, deg2rad, rad2deg, arccos, arcsin, arctan2, mod, where, linalg, trace
+# Development version 1.6
+# including functions for Hudson source type diamond diagram
+
+from numpy import diff, zeros, asarray, sin, cos, sqrt, dot, deg2rad, rad2deg, arccos, arcsin, arctan2, mod, where, linalg, trace, divide
 import scipy.cluster.hierarchy as hac
 
 
@@ -268,11 +270,17 @@ def moment(am):
     iso = e
 
     # fclvd, seismic moment and Mw
-    fclvd = (abs(dval[1] / (max((abs(dval[0])), (abs(dval[2]))))))
-             # from Frohlich and Apperson, 1992
-    am0 = (abs(dval[0]) + abs(dval[2])) / 2  # From Dziewonski et al., 1981
+    fclvd = (abs(val[1] / (max((abs(val[0])), (abs(val[2])))))) # from Frohlich and Apperson, 1992
+#    am0 = (abs(val[0]) + abs(val[2])) / 2  # From Dziewonski et al., 1981
+    am0 = sqrt((val[0]**2 + val[1]**2 + val[2]**2) / 2)  # From Silver and Jordan, 1982
 
-    return am0, fclvd, dval, vect, iso
+    # u & v position in Hudson et al. (1989) skewed diamond from Vavrycuk (2014)
+    maxiM = max(abs(val[0]),abs(val[1]),abs(val[2]))
+    Ms = divide(val,maxiM)
+    u = (-(2/3))*(Ms[2]+Ms[0]-2*Ms[1])
+    v = (1/3)*(Ms[0]+Ms[1]+Ms[2])
+
+    return am0, fclvd, dval, vect, iso, u, v
 
 
 def HC(data, meth, metr, num_clust):
