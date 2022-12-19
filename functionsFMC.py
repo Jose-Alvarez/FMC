@@ -23,13 +23,16 @@
 # to manage earthquake focal mechanism data, Computers & Geosciences (2003)
 #
 # Version 1.01
-# Development version 1.1
+# Version 1.1
 # 	Including Hierarchical clustering
-# Development version 1.2
+# Version 1.2
 #	Including slip sense and inmersion
-# Development version 1.6
+# Version 1.6
 # including functions for Hudson source type diamond diagram
-
+# Version 1.7
+# include functions to work with P, T orientations as input
+# Version 1.8
+# Include isotropic component ratio
 from numpy import diff, zeros, asarray, sin, cos, sqrt, dot, deg2rad, rad2deg, arccos, arcsin, arctan2, mod, where, linalg, trace, divide
 import scipy.cluster.hierarchy as hac
 
@@ -50,6 +53,8 @@ def norm(wax, way, waz):
 
 
 def ca2ax(wax, way, waz):
+    """This function translates cartesian components to orientation"""
+    
     (ax, ay, az) = norm(wax, way, waz)
     if az < 0:
         ax = -ax
@@ -63,8 +68,18 @@ def ca2ax(wax, way, waz):
     plunge = rad2deg(arcsin(az))
     return trend, plunge
 
+def ax2ca(trend, plunge):
+    """This function translates orientation to cartesian components"""
+    
+    ax = cos(deg2rad(plunge))*cos(deg2rad(trend))
+    ay = cos(deg2rad(plunge))*sin(deg2rad(trend))
+    az = sin(deg2rad(plunge))
+    
+    return ax, ay, az
+
 
 def nd2pl(wanx, wany, wanz, wdx, wdy, wdz):
+    """This function computes plane orientation from outward normal and slip vectors"""
     (anX, anY, anZ) = norm(wanx, wany, wanz)
     (dx, dy, dz) = norm(wdx, wdy, wdz)
 
@@ -118,6 +133,7 @@ dx,dy,dz       components of slip versor in the Aki-Richards
 
 
 def pl2pl(strika, dipa, rakea):
+    """Compute one nodal plane from the other."""
 
     anX, anY, anZ, dx, dy, dz = pl2nd(strika, dipa, rakea)
     strikb, dipb, rakeb, dipdirb = nd2pl(dx, dy, dz, anX, anY, anZ)
@@ -155,8 +171,56 @@ def nd2pt(wanx, wany, wanz, wdx, wdy, wdz):
 
     return px, py, pz, tx, ty, tz, bx, by, bz
 
+def pt2nd(wpx, wpy, wpz, wtx, wty, wtz):
+    """compute outward normal and slip vectors from cartesian component of P and T axes."""
+    
+    (px, py, pz) = norm(wpx, wpy, wpz)
+    if pz < 0:
+        px = -px
+        py = -py
+        pz = -pz
+    
+    (tx, ty, tz) = norm(wtx, wty, wtz)
+    if tz < 0:
+        tx = -tx
+        ty = -ty
+        tz = -tz
+        
+    anX = tx + px
+    anY = ty + py
+    anZ = tz + pz
+    
+    (anX, anY, anZ) = norm(anX, anY, anZ)
+
+    dx = tx - px
+    dy = ty - py
+    dz = tz - pz
+    (dx, dy, dz) = norm(dx, dy, dz)
+    
+    if anZ < 0:
+        anX = -anX
+        anY = -anY
+        anZ = -anZ
+        dx = -dx
+        dy = -dy
+        dz = -dz
+
+    return anX, anY, anZ, dx, dy, dz
+
+def pt2pl(trendp, plungp, trendt, plungt):
+    """compute strike dip and rake (and dip direction) of two nodal planes from trend and plung of P and T axes"""
+    
+    (px, py, pz) = ax2ca(trendp,plungp)
+    (tx, ty, tz) = ax2ca(trendt,plungt)
+    
+    (anX, anY, anZ, dx, dy, dz) = pt2nd(px, py, pz, tx, ty, tz)
+    (strika, dipa, rakea, dipdira) = nd2pl(anX, anY, anZ, dx, dy, dz)
+    (strikb, dipb, rakeb, dipdirb) = nd2pl(dx, dy, dz, anX, anY, anZ)
+
+    return strika, dipa, rakea, dipdira, strikb, dipb, rakeb, dipdirb
 
 def nd2ar(anX, anY, anZ, dx, dy, dz, am0):
+    """Compute tensor components from outward normal and slip vectors."""
 
     wanx, wany, wanz = norm(anX, anY, anZ)
     wdx, wdy, wdz = norm(dx, dy, dz)
@@ -181,6 +245,8 @@ def nd2ar(anX, anY, anZ, dx, dy, dz, am0):
 
 
 def ar2ha(am):
+    """Translates tensor components between cartesian and Harvard convention."""
+
     amo = zeros((3, 3))
     amo[0][0] = am[0][0]
     amo[0][1] = -am[0][1]
@@ -196,6 +262,8 @@ def ar2ha(am):
 
 
 def slipinm(strike, dip, rake):
+    """Computes slip vector orientation from a plane orientation."""
+
     a = cos(deg2rad(rake)) * cos(deg2rad(strike)) + \
         sin(deg2rad(rake)) * cos(deg2rad(dip)) * sin(deg2rad(strike))
     b = -cos(deg2rad(rake)) * sin(deg2rad(strike)) + \
@@ -208,7 +276,8 @@ def slipinm(strike, dip, rake):
 
 
 def kave(plungt, plungb, plungp):
-    """x and y for the Kaverina diagram"""
+    """Computes x and y for the Kaverina diagram"""
+    
     zt = sin(deg2rad(plungt))
     zb = sin(deg2rad(plungb))
     zp = sin(deg2rad(plungp))
@@ -220,6 +289,8 @@ def kave(plungt, plungb, plungp):
 
 
 def mecclass(plungt, plungb, plungp):
+    """Classify the rupture as function of the axes plunges."""
+
 
     plunges = asarray((plungp, plungb, plungt))
     P = plunges[0]
@@ -253,6 +324,8 @@ def mecclass(plungt, plungb, plungp):
 
 
 def moment(am):
+    """Computes scalar seismic moment, fclvd, deviatoric components, iso component and ratio, eigenvectors, and position on the Hudson diagram"""
+
     # To avoid problems with cosines
     ceros = where(am == 0)
     am[ceros] = 0.000001
@@ -273,6 +346,7 @@ def moment(am):
     fclvd = (abs(val[1] / (max((abs(val[0])), (abs(val[2])))))) # from Frohlich and Apperson, 1992
 #    am0 = (abs(val[0]) + abs(val[2])) / 2  # From Dziewonski et al., 1981
     am0 = sqrt((val[0]**2 + val[1]**2 + val[2]**2) / 2)  # From Silver and Jordan, 1982
+    fiso = iso/am0
 
     # u & v position in Hudson et al. (1989) skewed diamond from Vavrycuk (2014)
     maxiM = max(abs(val[0]),abs(val[1]),abs(val[2]))
@@ -280,16 +354,16 @@ def moment(am):
     u = (-(2/3))*(Ms[2]+Ms[0]-2*Ms[1])
     v = (1/3)*(Ms[0]+Ms[1]+Ms[2])
 
-    return am0, fclvd, dval, vect, iso, u, v
+    return am0, fclvd, dval, vect, iso, u, v, fiso
 
 
 def HC(data, meth, metr, num_clust):
-    # Mahalanobis Hierarchycal Clustering
+    """# Mahalanobis Hierarchycal Clustering
     # 	data: 	the set of variables used to perform the clustering analysis
     #	method:	method to perform the HCA [single(default), complete, average, weighted, average, centroid, median, ward]
     #	metric: the metric to perform the HCA [euclidean(default), mahalanobis]
     # num_clust:      predefined number of clusters, if not present then it is
-    # automatically computed with "diff".
+    # automatically computed with "diff"."""
 
     li = hac.linkage(data, method=meth, metric=metr)
     if num_clust == 0:

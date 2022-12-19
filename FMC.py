@@ -51,12 +51,19 @@
 # Version 1.6
 # Including:
 #   Hudson et al. (1989) source-type diagram with plotting options -pd
-
+#
+# Version 1.7
+# Including:
+#  Input of P and T axes from strain tensors obtained with fault slip analysis
+#
+# Version 1.8
+# Including:
+#  Isotropic component ratio output
 
 import sys
 import argparse
 from argparse import RawTextHelpFormatter, ArgumentParser
-from numpy import c_, vstack, array, zeros, asarray, genfromtxt, atleast_2d, shape, log10, array2string
+from numpy import c_, vstack, array, zeros, asarray, genfromtxt, atleast_2d, shape, log10, array2string, isnan
 from functionsFMC import *
 from plotFMC import *
 
@@ -64,12 +71,13 @@ from plotFMC import *
 parser = ArgumentParser(description='Focal mechanism process\
  and classification.\nVersion 1.3', formatter_class=RawTextHelpFormatter)
 parser.add_argument('infile', nargs='?')
-parser.add_argument('-i', nargs=1, default=['CMT'], choices=['CMT', 'AR', 'P'],
+parser.add_argument('-i', nargs=1, default=['CMT'], choices=['CMT', 'AR', 'P', 'PT'],
                     help='Input file format.\n\
 Choose between:\n\
 [CMT]: Global CMT for psmeca (GMT) [default]\n\
 [AR]: Aki and Richards for psmeca (GMT)\n\
-[P]: Old Harvard CMT with both planes for psmeca (GMT)\n ')
+[P]: Old Harvard CMT with both planes for psmeca (GMT)\n\
+[PT]: Tensor P and T axes\n')
 parser.add_argument(
     '-o', nargs=1, default=['CMT'], choices=['CMT', 'P', 'AR', 'K', 'ALL', 'CUSTOM'],
     help='Output file format.\n\
@@ -101,8 +109,7 @@ parser.add_argument('-pa', nargs='?',
                     help='If present the program will plot labels with the selected parameter on the diagram plot.\n\
 Type "FMC.py -helpFields" to obtain information on the data fields that can be used. \n ')
 parser.add_argument('-pg', nargs='?',
-                    help='If present the program will plot gridlines with the specified angular spacing on the diagram plot. [10 by default]\n\
-Type "FMC.py -helpFields" to obtain information on the data fields that can be used. \n ')
+                    help='If present the program will plot gridlines with the specified angular spacing on the diagram plot. [10 by default] \n ')
 parser.add_argument('-pt', nargs='?',
                     help='If present the program will plot a title with the specified text on the diagram plot.\n\
 If no text is given, or "-pt" is not set, then the output plot file name (without extension) is used by default.\n\
@@ -187,6 +194,7 @@ trendt = Trend of T axis \n\
 plungt = Plunge of T axis \n\
 fclvd = Compensated linear vector dipole ratio \n\
 iso = Isotropic component of the Moment Tensor \n\
+fiso = Isotropic component ratio \n\
 u_Hudson = u position on the Hudson diagram \n\
 v_Hudson = v position on the Hudson diagram \n\
 x_kav = x position on the Kaverina diagram \n\
@@ -196,7 +204,7 @@ clas = focal mechanism rupture type \n\
 posX = X plotting position for GMT psmeca \n\
 posY = Y plotting position for GMT psmeca \n\
 clustID = ID number of cluster \n\
-\n")
+data1 = variable to represent any quantity to use with PT axes input \n\n")
     sys.exit(1)
 
 if args.infile:
@@ -269,6 +277,7 @@ trendt_all = zeros((n_events, 1))
 plungt_all = zeros((n_events, 1))
 fclvd_all = zeros((n_events, 1))
 iso_all = zeros((n_events, 1))
+fiso_all = zeros((n_events, 1))
 u_Hudson_all = zeros((n_events, 1))
 v_Hudson_all = zeros((n_events, 1))
 x_kav_all = zeros((n_events, 1))
@@ -279,6 +288,7 @@ clas_all = [None] * n_events
 posX_all = [None] * n_events
 posY_all = [None] * n_events
 clustID_all = [None] * n_events
+data1_all = zeros((n_events, 1))
 
 # false clustID to initialize the variable
 clustID = 0
@@ -315,7 +325,7 @@ for row in range(n_events):
         am = asarray(([mtt, -mtf, mrt], [-mtf, mff, -mrf], [mrt, -mrf, mrr]))
 
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso = moment(am)
         Mw = ((2.0 / 3.0) * log10(Mo)) - 10.733333
         mant_exp = ("%e" % Mo).split('e')
         mant = mant_exp[0]
@@ -377,6 +387,8 @@ for row in range(n_events):
 
         # Focal mechanism classification Alvarez-Gomez, 2009.
         clas = mecclass(plungt, plungb, plungp)
+        
+        data1=0
 
     elif args.i[0] == 'AR':
         if fields != 10:
@@ -429,13 +441,14 @@ for row in range(n_events):
         mtf = am[0][1]
 
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso = moment(am)
 
         # x, y Kaverina diagram
         x_kav, y_kav = kave(plungt, plungb, plungp)
 
         # Focal mechanism classification Alvarez-Gomez, 2009.
         clas = mecclass(plungt, plungb, plungp)
+        data1=0
 
     elif args.i[0] == 'P':
         if fields != 14:
@@ -490,7 +503,66 @@ for row in range(n_events):
         mtf = am[0][1]
 
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso = moment(am)
+
+        # x, y Kaverina diagram
+        x_kav, y_kav = kave(plungt, plungb, plungp)
+
+        # Focal mechanism classification Alvarez-Gomez, 2009.
+        clas = mecclass(plungt, plungb, plungp)
+        data1=0
+
+    elif args.i[0] == 'PT': # to work with tensors obtained from fault slip analysis
+        if fields != 10:
+            sys.stderr.write(
+                "ERROR - Incorrect number of columns (should be 10). - Program aborted")
+            sys.exit(1)
+        else:
+            if args.v is not None:
+                sys.stderr.write(
+                    ''.join(
+                        '\rProcessing ' + str(
+                            row + 1) + '/' + str(
+                                n_events) + ' focal mechanisms.'))
+        lon = data[row][0]
+        lat = data[row][1]
+        trendp = data[row][2]
+        plungp = data[row][3]
+        trendt = data[row][4]
+        plungt = data[row][5]
+        data1 = data[row][6]
+        posX = data[row][7]
+        posY = data[row][8]
+        ID = data[row][9]
+        
+        strA, dipA, rakeA, dipdirA, strB, dipB, rakeB, dipdirB = pt2pl(trendp, plungp, trendt, plungt)
+        
+        anX, anY, anZ, dx, dy, dz = pl2nd(strA, dipA, rakeA)
+        px, py, pz, tx, ty, tz, bx, by, bz = nd2pt(anX, anY, anZ, dx, dy, dz)
+
+        slipA, plungA = slipinm(strA, dipA, rakeA)
+        slipB, plungB = slipinm(strB, dipB, rakeB)
+        
+        trendb, plungb = ca2ax(bx, by, bz)
+        
+        # moment tensor from P and T
+        Mo = 1E20 # fake scalar moment
+        expo = 20 # fake exponent
+        mant = 1 # fake mantissa
+        Mw = 8 # fake Mw
+        dep = 0 # fake depth
+        
+        am = nd2ar(anX, anY, anZ, dx, dy, dz, Mo)
+        am = ar2ha(am)
+        mrr = am[2][2]
+        mff = am[1][1]
+        mtt = am[0][0]
+        mrf = am[1][2]
+        mrt = am[0][2]
+        mtf = am[0][1]
+        
+        # scalar moment and fclvd
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso = moment(am)
 
         # x, y Kaverina diagram
         x_kav, y_kav = kave(plungt, plungb, plungp)
@@ -534,6 +606,7 @@ for row in range(n_events):
     plungt_all[row] = "%g" % (plungt)
     fclvd_all[row] = "%g" % (fclvd)
     iso_all[row] = "%g" % (iso)
+    fiso_all[row] = "%g" % (fiso)
     u_Hudson_all[row] = "%g" % (u_Hudson)
     v_Hudson_all[row] = "%g" % (v_Hudson)
     x_kav_all[row] = "%g" % (x_kav)
@@ -544,6 +617,8 @@ for row in range(n_events):
     posX_all[row] = posX
     posY_all[row] = posY
     clustID_all[row] = clustID
+    data1_all[row] = data1
+
 
     r = row + 1
 
@@ -579,17 +654,19 @@ trendtH = vstack(((['Trend_T']), (array(trendt_all, dtype=object))))
 plungtH = vstack(((['Plunge_T']), (array(plungt_all, dtype=object))))
 fclvdH = vstack(((['fclvd']), (array(fclvd_all, dtype=object))))
 isoH = vstack(((['Isotropic']), (array(iso_all, dtype=object))))
+fisoH = vstack(((['Iso_ratio']), (array(fiso_all, dtype=object))))
 u_HudsonH = vstack(((['u_Hudson']), (array(u_Hudson_all, dtype=object))))
 v_HudsonH = vstack(((['v_Hudson']), (array(v_Hudson_all, dtype=object))))
 x_kavH = vstack(((['X_Kaverina']), (array(x_kav_all, dtype=object))))
 y_kavH = vstack(((['Y_Kaverina']), (array(y_kav_all, dtype=object))))
 IDH = vstack(((['ID']), (array(ID_all).reshape((n_events, 1)))))
-clasH = vstack(((['Rupture_type']), (array(clas_all).reshape((n_events, 1)))))
+clasH = vstack(((['rupture_type']), (array(clas_all).reshape((n_events, 1)))))
 posXH = vstack(
     ((['X_position(GMT)']), (array(posX_all).reshape((n_events, 1)))))
 posYH = vstack(
     ((['Y_position(GMT)']), (array(posY_all).reshape((n_events, 1)))))
 clustIDH = vstack(((['clustID']), (array(clustID_all).reshape((n_events, 1)))))
+data1H = vstack(((['data1']), (array(data1_all).reshape((n_events, 1)))))
 
 dict_all = {
     'lon': lon_all,
@@ -623,6 +700,7 @@ dict_all = {
      'plungt': plungt_all,
      'fclvd': fclvd_all,
      'iso': iso_all,
+     'fiso': fiso_all,
      'u_Hudson': u_Hudson_all,
      'v_Hudson': v_Hudson_all,
      'x_kav': x_kav_all,
@@ -631,7 +709,8 @@ dict_all = {
      'clas': clas_all,
      'posX': posX_all,
      'posY': posY_all,
-     'clustID': clustID_all}
+     'clustID': clustID_all,
+     'data1': data1_all}
 
 if args.v is not None:
     sys.stderr.write('\n')
@@ -706,6 +785,7 @@ dict_H = {
      'plungt': plungtH,
      'fclvd': fclvdH,
      'iso': isoH,
+     'fiso': fisoH,
      'u_Hudson': u_HudsonH,
      'v_Hudson': v_HudsonH,
      'x_kav': x_kavH,
@@ -714,7 +794,8 @@ dict_H = {
      'clas': clasH,
      'posX': posXH,
      'posY': posYH,
-     'clustID': clustIDH}
+     'clustID': clustIDH,
+     'data1': data1H}
 
 #~ output
 if args.o[0] == 'CMT':
@@ -809,6 +890,7 @@ elif args.o[0] == 'ALL':
      plungtH,
      fclvdH,
      isoH,
+     fisoH,
      u_HudsonH,
      v_HudsonH,
      x_kavH,
