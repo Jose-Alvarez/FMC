@@ -59,6 +59,11 @@
 # Version 1.8
 # Including:
 #  Isotropic component ratio output
+#
+# Version 1.9
+# Including:
+#  Small code adaptation to define symbol plot sizes according to the data input magnitude range    
+
 
 import sys
 import argparse
@@ -949,13 +954,6 @@ if args.p:
     else:
         plotname = args.p.split('.')[0]
 
-# working on it
-# computes min and max Mw to provide adecuate symbol scaling
-    minMw = min(Mw_all)
-    maxMw = max(Mw_all)
-    maxscale=100/maxMw
-    minscale=20/minMw
-    scale=(maxscale+minscale)/2
 # ----------------------------------
 
     if args.pa:
@@ -964,7 +962,7 @@ if args.p:
         fig = annot(
             x_kav_all,
             y_kav_all,
-            Mw_all**2,
+            Mw_all,
             color,
             plotname,
             label,
@@ -975,7 +973,7 @@ if args.p:
         fig = circles(
             x_kav_all,
             y_kav_all,
-            Mw_all**2,
+            Mw_all,
             color,
             plotname,
             label,
@@ -1013,7 +1011,7 @@ if args.pd:
         fig = diamond_annot(
             u_Hudson_all,
             v_Hudson_all,
-            Mw_all**2,
+            Mw_all,
             color,
             plotname,
             label,
@@ -1024,7 +1022,7 @@ if args.pd:
         fig = diamond_circles(
             u_Hudson_all,
             v_Hudson_all,
-            Mw_all**2,
+            Mw_all,
             color,
             plotname,
             label)
