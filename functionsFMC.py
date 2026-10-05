@@ -33,7 +33,17 @@
 # include functions to work with P, T orientations as input
 # Version 1.8
 # Include isotropic component ratio
-from numpy import diff, zeros, asarray, sin, cos, sqrt, dot, deg2rad, rad2deg, arccos, arcsin, arctan2, mod, where, linalg, trace, divide
+# version 1.8.1
+# Changed the fclvd definition to Giardini (1984): signed, between -0.5 and 0.5, with the sign of the intermediate eigenvalue
+# (Frohlich and Davis, 1999, define it with the opposite sign)
+# version 1.9.1
+# kave: robust to rounding errors at the centre of the diagram (no more NaN)
+# version 1.10
+# fclvd computed from the deviatoric eigenvalues with the sign convention of Frohlich and Davis (1999):
+#   fclvd = -lambdaB/max(|lambdaT|,|lambdaP|), positive for tension-dominated CLVD
+#   (opposite sign to versions 1.8.1 - 1.9.1, which used the definition of Giardini, 1984)
+# New parameter Gamma: CLVD index of Kagan and Knopoff (1985), computed from the deviatoric eigenvalues
+from numpy import diff, zeros, asarray, sin, cos, sqrt, dot, deg2rad, rad2deg, arccos, arcsin, arctan2, mod, where, linalg, trace, divide, clip, errstate
 import scipy.cluster.hierarchy as hac
 
 
@@ -281,10 +291,16 @@ def kave(plungt, plungb, plungp):
     zt = sin(deg2rad(plungt))
     zb = sin(deg2rad(plungb))
     zp = sin(deg2rad(plungp))
-    L = 2 * sin(0.5 * arccos((zt + zb + zp) / sqrt(3)))
+    # Rounding errors can push the argument of arccos slightly above 1 for a
+    # mechanism located at the centre of the diagram, giving NaN.
+    arg = clip((zt + zb + zp) / sqrt(3), -1.0, 1.0)
+    L = 2 * sin(0.5 * arccos(arg))
     N = sqrt(2 * ((zb - zp)**2 + (zb - zt)**2 + (zt - zp)**2))
-    x = sqrt(3) * (L / N) * (zt - zp)
-    y = (L / N) * (2 * zb - zp - zt)
+    # At the centre of the diagram L and N are both zero (0/0): x = y = 0.
+    with errstate(divide='ignore', invalid='ignore'):
+        ratio = where(N > 1e-12, L / N, 0.0)
+    x = sqrt(3) * ratio * (zt - zp)
+    y = ratio * (2 * zb - zp - zt)
     return x, y
 
 
@@ -323,8 +339,25 @@ def mecclass(plungt, plungb, plungp):
     return clase
 
 
+def clvd_indices(dval):
+    """CLVD ratio (fclvd) and CLVD index (Gamma) from the eigenvalues of the deviatoric moment tensor.
+    dval: deviatoric eigenvalues in increasing order (P, B, T).
+    fclvd = -lambdaB / max(|lambdaT|, |lambdaP|)   (Frohlich and Davis, 1999), between -0.5 and 0.5
+    Gamma = 3*sqrt(6)*lambdaT*lambdaB*lambdaP / (lambdaT^2 + lambdaB^2 + lambdaP^2)^(3/2)
+            (Kagan and Knopoff, 1985), between -1 and 1
+    Both are 0 for a double couple and positive for a tension-dominated CLVD, (lambdaT,lambdaB,lambdaP) ~ (2,-1,-1)."""
+    lp, lb, lt = dval[0], dval[1], dval[2]
+    mx = max(abs(lp), abs(lt))
+    s2 = lp**2 + lb**2 + lt**2
+    if mx == 0 or s2 == 0:
+        return 0.0, 0.0
+    fclvd = -lb / mx
+    Gamma = 3 * sqrt(6) * lt * lb * lp / s2**1.5
+    return fclvd, Gamma
+
+
 def moment(am):
-    """Computes scalar seismic moment, fclvd, deviatoric components, iso component and ratio, eigenvectors, and position on the Hudson diagram"""
+    """Computes scalar seismic moment, fclvd and Gamma, deviatoric components, iso component and ratio, eigenvectors, and position on the Hudson diagram"""
 
     # To avoid problems with cosines
     ceros = where(am == 0)
@@ -343,7 +376,9 @@ def moment(am):
     iso = e
 
     # fclvd, seismic moment and Mw
-    fclvd = (abs(val[1] / (max((abs(val[0])), (abs(val[2])))))) # from Frohlich and Apperson, 1992
+#    fclvd = (abs(val[1] / (max((abs(val[0])), (abs(val[2])))))) # from Frohlich and Apperson, 1992
+    # fclvd (Frohlich and Davis, 1999) and Gamma (Kagan and Knopoff, 1985) from the deviatoric eigenvalues only
+    fclvd, Gamma = clvd_indices(dval)
 #    am0 = (abs(val[0]) + abs(val[2])) / 2  # From Dziewonski et al., 1981
     am0 = sqrt((val[0]**2 + val[1]**2 + val[2]**2) / 2)  # From Silver and Jordan, 1982
     fiso = iso/am0
@@ -354,7 +389,7 @@ def moment(am):
     u = (-(2/3))*(Ms[2]+Ms[0]-2*Ms[1])
     v = (1/3)*(Ms[0]+Ms[1]+Ms[2])
 
-    return am0, fclvd, dval, vect, iso, u, v, fiso
+    return am0, fclvd, dval, vect, iso, u, v, fiso, Gamma
 
 
 def HC(data, meth, metr, num_clust):

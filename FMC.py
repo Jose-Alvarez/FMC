@@ -63,9 +63,27 @@
 # Version 1.9
 # Including:
 #  Small code adaptation to define symbol plot sizes according to the data input magnitude range    
+#
+# Version 1.9.1
+# Including:
+#  Bug correction: -pa labels with recent NumPy versions
+#  Bug correction: -pd with a single event or with equal magnitudes
+#  Bug correction: -pg without value now uses the documented default (10)
+#  Bug correction: -pc with non numeric parameters (e.g. alphanumeric ID) gives a warning
+#  Bug correction: default plot title when the file name has a path or several dots
+#  Clear error message for clustering methods that need the euclidean metric
+#  Correct version number in the help
+#
+# Version 1.10
+# Including:
+#  fclvd is computed from the deviatoric eigenvalues with the sign of Frohlich and Davis (1999):
+#   positive for tension-dominated CLVD (opposite sign to versions 1.8.1 - 1.9.1)
+#  New parameter Gamma (Kagan and Knopoff, 1985), computed from the deviatoric eigenvalues; included in the ALL output after fclvd
+#  Left label of the source type diagram changed to CLVD (+)
 
 
 import sys
+import os
 import argparse
 from argparse import RawTextHelpFormatter, ArgumentParser
 from numpy import c_, vstack, array, zeros, asarray, genfromtxt, atleast_2d, shape, log10, array2string, isnan
@@ -74,7 +92,7 @@ from plotFMC import *
 
 # All the command line parser thing.
 parser = ArgumentParser(description='Focal mechanism process\
- and classification.\nVersion 1.3', formatter_class=RawTextHelpFormatter)
+ and classification.\nVersion 1.10', formatter_class=RawTextHelpFormatter)
 parser.add_argument('infile', nargs='?')
 parser.add_argument('-i', nargs=1, default=['CMT'], choices=['CMT', 'AR', 'P', 'PT'],
                     help='Input file format.\n\
@@ -113,7 +131,7 @@ By default FMC uses white circles or, for the clustering, the cluster number.\n 
 parser.add_argument('-pa', nargs='?',
                     help='If present the program will plot labels with the selected parameter on the diagram plot.\n\
 Type "FMC.py -helpFields" to obtain information on the data fields that can be used. \n ')
-parser.add_argument('-pg', nargs='?',
+parser.add_argument('-pg', nargs='?', const='10',
                     help='If present the program will plot gridlines with the specified angular spacing on the diagram plot. [10 by default] \n ')
 parser.add_argument('-pt', nargs='?',
                     help='If present the program will plot a title with the specified text on the diagram plot.\n\
@@ -197,7 +215,8 @@ trendb = Trend of B axis \n\
 plungb = Plunge of B axis \n\
 trendt = Trend of T axis \n\
 plungt = Plunge of T axis \n\
-fclvd = Compensated linear vector dipole ratio \n\
+fclvd = Compensated linear vector dipole ratio (positive for tension) \n\
+Gamma = CLVD index of Kagan and Knopoff (1985) \n\
 iso = Isotropic component of the Moment Tensor \n\
 fiso = Isotropic component ratio \n\
 u_Hudson = u position on the Hudson diagram \n\
@@ -281,6 +300,7 @@ plungb_all = zeros((n_events, 1))
 trendt_all = zeros((n_events, 1))
 plungt_all = zeros((n_events, 1))
 fclvd_all = zeros((n_events, 1))
+Gamma_all = zeros((n_events, 1))
 iso_all = zeros((n_events, 1))
 fiso_all = zeros((n_events, 1))
 u_Hudson_all = zeros((n_events, 1))
@@ -330,7 +350,7 @@ for row in range(n_events):
         am = asarray(([mtt, -mtf, mrt], [-mtf, mff, -mrf], [mrt, -mrf, mrr]))
 
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso, Gamma = moment(am)
         Mw = ((2.0 / 3.0) * log10(Mo)) - 10.733333
         mant_exp = ("%e" % Mo).split('e')
         mant = mant_exp[0]
@@ -446,7 +466,7 @@ for row in range(n_events):
         mtf = am[0][1]
 
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso, Gamma = moment(am)
 
         # x, y Kaverina diagram
         x_kav, y_kav = kave(plungt, plungb, plungp)
@@ -508,7 +528,7 @@ for row in range(n_events):
         mtf = am[0][1]
 
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso, Gamma = moment(am)
 
         # x, y Kaverina diagram
         x_kav, y_kav = kave(plungt, plungb, plungp)
@@ -531,10 +551,10 @@ for row in range(n_events):
                                 n_events) + ' focal mechanisms.'))
         lon = data[row][0]
         lat = data[row][1]
-        trendp = data[row][2]
-        plungp = data[row][3]
-        trendt = data[row][4]
-        plungt = data[row][5]
+        trendp = float(data[row][2])
+        plungp = float(data[row][3])
+        trendt = float(data[row][4])
+        plungt = float(data[row][5])
         data1 = data[row][6]
         posX = data[row][7]
         posY = data[row][8]
@@ -567,7 +587,7 @@ for row in range(n_events):
         mtf = am[0][1]
         
         # scalar moment and fclvd
-        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso = moment(am)
+        Mo, fclvd, val, vect, iso, u_Hudson, v_Hudson, fiso, Gamma = moment(am)
 
         # x, y Kaverina diagram
         x_kav, y_kav = kave(plungt, plungb, plungp)
@@ -576,7 +596,7 @@ for row in range(n_events):
         clas = mecclass(plungt, plungb, plungp)
 
     else:
-        sys.stderr.write('Error, input file format should be G or P.')
+        sys.stderr.write('Error, input file format should be CMT, AR, P or PT.')
         sys.exit(1)
 
     # storing data for the plot
@@ -610,6 +630,7 @@ for row in range(n_events):
     trendt_all[row] = "%g" % (trendt)
     plungt_all[row] = "%g" % (plungt)
     fclvd_all[row] = "%g" % (fclvd)
+    Gamma_all[row] = "%g" % (Gamma)
     iso_all[row] = "%g" % (iso)
     fiso_all[row] = "%g" % (fiso)
     u_Hudson_all[row] = "%g" % (u_Hudson)
@@ -658,6 +679,7 @@ plungbH = vstack(((['Plunge_B']), (array(plungb_all, dtype=object))))
 trendtH = vstack(((['Trend_T']), (array(trendt_all, dtype=object))))
 plungtH = vstack(((['Plunge_T']), (array(plungt_all, dtype=object))))
 fclvdH = vstack(((['fclvd']), (array(fclvd_all, dtype=object))))
+GammaH = vstack(((['Gamma']), (array(Gamma_all, dtype=object))))
 isoH = vstack(((['Isotropic']), (array(iso_all, dtype=object))))
 fisoH = vstack(((['Iso_ratio']), (array(fiso_all, dtype=object))))
 u_HudsonH = vstack(((['u_Hudson']), (array(u_Hudson_all, dtype=object))))
@@ -704,6 +726,7 @@ dict_all = {
      'trendt': trendt_all,
      'plungt': plungt_all,
      'fclvd': fclvd_all,
+     'Gamma': Gamma_all,
      'iso': iso_all,
      'fiso': fiso_all,
      'u_Hudson': u_Hudson_all,
@@ -732,6 +755,13 @@ else:
         metric = 'euclidean'
     else:
         metric = args.ce
+
+    if method in ('centroid', 'median', 'ward') and metric != 'euclidean':
+        sys.stderr.write(
+            "ERROR - The clustering methods 'centroid', 'median' and 'ward' only work with "
+            "the 'euclidean' metric.\nUse -cm single, complete, average or weighted with "
+            "-ce %s, or use -ce euclidean.\n" % metric)
+        sys.exit(1)
 
     if args.cn is None:
         num_clust = 0
@@ -789,6 +819,7 @@ dict_H = {
      'trendt': trendtH,
      'plungt': plungtH,
      'fclvd': fclvdH,
+     'Gamma': GammaH,
      'iso': isoH,
      'fiso': fisoH,
      'u_Hudson': u_HudsonH,
@@ -894,6 +925,7 @@ elif args.o[0] == 'ALL':
      trendtH,
      plungtH,
      fclvdH,
+     GammaH,
      isoH,
      fisoH,
      u_HudsonH,
@@ -922,12 +954,20 @@ args.outfile.write(
     '\n'.join(str(e).strip("[]").replace("'", '').replace('\n', '') for e in outdata))
 print ("")
 
+def is_numeric(values):
+    """True if the values can be used to colour the symbols of the plots."""
+    try:
+        asarray(values, dtype=float)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
 # diagram FMC plot
 
 if args.p:
     if args.pc:
-#        if args.pc == 'ID' or args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
-        if args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
+        if not is_numeric(dict_all[args.pc]):
             sys.stderr.write('\nWarning, to fill the symbols a numeric value is needed.\n')
             color = 'white'
             label = 'nada'
@@ -952,7 +992,7 @@ if args.p:
     if args.pt:
         plotname = args.pt
     else:
-        plotname = args.p.split('.')[0]
+        plotname = os.path.splitext(os.path.basename(args.p))[0]
 
 # ----------------------------------
 
@@ -985,8 +1025,7 @@ if args.p:
 # source type diagram plot
 if args.pd:
     if args.pc:
-#        if args.pc == 'ID' or args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
-        if args.pc == 'posX' or args.pc == 'posY' or args.pc == 'clas':
+        if not is_numeric(dict_all[args.pc]):
             sys.stderr.write('\nWarning, to fill the symbols a numeric value is needed.\n')
             color = 'white'
             label = 'nada'
@@ -1004,7 +1043,7 @@ if args.pd:
     if args.pt:
         plotname = args.pt
     else:
-        plotname = args.pd.split('.')[0]
+        plotname = os.path.splitext(os.path.basename(args.pd))[0]
     if args.pa:
         dotlabel = dict_all[args.pa]
         lab_param = dict_H[args.pa][0]
